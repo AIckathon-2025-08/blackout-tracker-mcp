@@ -80,6 +80,7 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 {
   "mcpServers": {
     "blackout-tracker": {
+      "type": "stdio",
       "command": "docker",
       "args": [
         "exec",
@@ -93,6 +94,8 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
   }
 }
 ```
+
+**Important:** Add `"mcpServers"` at the **root level** of `~/.claude.json`, **before** the `"projects"` section (not inside it). This makes the MCP server available globally across all projects.
 
 **5. Restart Claude Code/Desktop**
 
@@ -162,6 +165,7 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 {
   "mcpServers": {
     "blackout-tracker": {
+      "type": "stdio",
       "command": "/ABSOLUTE/PATH/TO/PROJECT/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/ABSOLUTE/PATH/TO/PROJECT",
@@ -171,7 +175,9 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 }
 ```
 
-**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project.
+**Important:**
+- Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project.
+- Add `"mcpServers"` at the **root level** of `~/.claude.json`, **before** the `"projects"` section (not inside it). This makes the MCP server available globally across all projects.
 
 **How to find your absolute path:**
 ```bash
@@ -184,6 +190,7 @@ pwd  # This shows your absolute path
 {
   "mcpServers": {
     "blackout-tracker": {
+      "type": "stdio",
       "command": "/Users/john/projects/blackout_tracker_mcp/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/Users/john/projects/blackout_tracker_mcp",
@@ -198,6 +205,7 @@ pwd  # This shows your absolute path
 {
   "mcpServers": {
     "blackout-tracker": {
+      "type": "stdio",
       "command": "C:\\Users\\john\\projects\\blackout_tracker_mcp\\venv\\Scripts\\python.exe",
       "args": ["-m", "src.server"],
       "cwd": "C:\\Users\\john\\projects\\blackout_tracker_mcp",
@@ -448,6 +456,7 @@ Enable detailed logging by adding to your configuration:
 {
   "mcpServers": {
     "blackout-tracker": {
+      "type": "stdio",
       "command": "/path/to/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/path/to/project",

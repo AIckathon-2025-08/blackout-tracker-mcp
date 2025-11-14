@@ -48,7 +48,12 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     lsb-release \
     xdg-utils \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure timezone
+RUN ln -sf /usr/share/zoneinfo/Europe/Kyiv /etc/localtime && \
+    echo "Europe/Kyiv" > /etc/timezone
 
 # Set working directory
 WORKDIR /app
@@ -67,18 +72,18 @@ COPY src/ ./src/
 COPY tests/ ./tests/
 COPY pyproject.toml .
 
-# Create directory for configuration (will be mounted as volume)
-RUN mkdir -p /root/.config/blackout_tracker_mcp
-
 # Set up proper permissions
 RUN chmod -R 755 /app
 
 # Add a non-root user for running the application
 RUN useradd -m -u 1000 mcpuser && \
-    chown -R mcpuser:mcpuser /app /root/.config/blackout_tracker_mcp
+    chown -R mcpuser:mcpuser /app
 
 # Switch to non-root user
 USER mcpuser
+
+# Create directory for configuration as mcpuser (will be mounted as volume)
+RUN mkdir -p /home/mcpuser/.config/blackout_tracker_mcp
 
 # Install Playwright browsers as mcpuser (they'll be in /home/mcpuser/.cache)
 RUN playwright install chromium

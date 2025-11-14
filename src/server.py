@@ -15,6 +15,7 @@ from mcp.server.stdio import stdio_server
 from config import config, ScheduleType
 from parser import fetch_dtek_schedule
 from i18n import get_i18n
+from monitoring import setup_monitoring, remove_monitoring, check_monitoring_status
 
 
 # Configure logging
@@ -101,6 +102,38 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["city", "street", "house_number"]
             }
+        ),
+        Tool(
+            name="configure_monitoring",
+            description=i18n.t("tool_descriptions.configure_monitoring"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "notification_before_minutes": {
+                        "type": "integer",
+                        "description": i18n.t("tool_params.notification_before_minutes"),
+                        "default": 60
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": i18n.t("tool_params.enabled"),
+                        "default": False
+                    },
+                    "check_interval_minutes": {
+                        "type": "integer",
+                        "description": i18n.t("tool_params.check_interval_minutes"),
+                        "default": 60
+                    }
+                }
+            }
+        ),
+        Tool(
+            name="check_upcoming_outages",
+            description=i18n.t("tool_descriptions.check_upcoming_outages"),
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
         )
     ]
 
@@ -117,6 +150,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             return await handle_get_next_outage(arguments)
         elif name == "get_outages_for_day":
             return await handle_get_outages_for_day(arguments)
+        elif name == "configure_monitoring":
+            return await handle_configure_monitoring(arguments)
+        elif name == "check_upcoming_outages":
+            return await handle_check_upcoming_outages(arguments)
         else:
             return [TextContent(type="text", text=f"Невідомий інструмент: {name}")]
     except Exception as e:
@@ -218,19 +255,29 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     # Find next outage
     now = datetime.now()
     current_hour = now.hour
+    today_date = now.strftime("%d.%m.%y")
 
     # Filter only actual schedules and sort by date and hour
     actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
 
-    # Find next outage (current or future)
+    # Find next outage (future only, not ongoing or past)
+    # An outage is considered "next" if it hasn't started yet
     next_outage = None
     for schedule in actual_schedules:
-        if schedule.start_hour >= current_hour:
+        # Check if this is today's schedule
+        if schedule.date == today_date:
+            # For today, only consider outages that haven't started yet
+            if schedule.start_hour > current_hour:
+                next_outage = schedule
+                break
+        else:
+            # For future dates (tomorrow), take the first one
             next_outage = schedule
             break
 
     if not next_outage and actual_schedules:
-        # If no outage today, take first outage from tomorrow
+        # If no outage today and no future dates found, this shouldn't happen
+        # but take first schedule as fallback
         next_outage = actual_schedules[0]
 
     if not next_outage:
@@ -397,6 +444,175 @@ def format_schedule_response(
     result += f"  • {i18n.t('schedule.hint_outages_for_day')}\n"
 
     return result
+
+
+async def handle_configure_monitoring(arguments: dict) -> list[TextContent]:
+    """Handle configure_monitoring tool."""
+    # Get current monitoring config
+    monitoring = config.get_monitoring()
+    was_enabled = monitoring.enabled
+
+    # Update with provided arguments
+    if "notification_before_minutes" in arguments:
+        monitoring.notification_before_minutes = arguments["notification_before_minutes"]
+    if "enabled" in arguments:
+        monitoring.enabled = arguments["enabled"]
+    if "check_interval_minutes" in arguments:
+        monitoring.check_interval_minutes = arguments["check_interval_minutes"]
+
+    # Save updated config
+    config.update_monitoring(
+        notification_before_minutes=monitoring.notification_before_minutes,
+        enabled=monitoring.enabled,
+        check_interval_minutes=monitoring.check_interval_minutes
+    )
+
+    # Set up or remove automatic monitoring based on enabled state
+    setup_message = ""
+    if monitoring.enabled and not was_enabled:
+        # Enabling monitoring - set up automatic checks
+        logger.info("Setting up automatic monitoring...")
+        success, message = setup_monitoring(monitoring.check_interval_minutes)
+        if success:
+            setup_message = f"\n\n🤖 Automatic monitoring activated!\n{message}"
+        else:
+            setup_message = f"\n\n⚠️ Could not set up automatic monitoring:\n{message}\n\nYou can still check manually by asking: 'Check for upcoming outages'"
+    elif not monitoring.enabled and was_enabled:
+        # Disabling monitoring - remove automatic checks
+        logger.info("Removing automatic monitoring...")
+        success, message = remove_monitoring()
+        if success:
+            setup_message = f"\n\n{message}"
+        else:
+            setup_message = f"\n\n⚠️ Could not remove automatic monitoring:\n{message}"
+    elif monitoring.enabled and was_enabled:
+        # Updating monitoring settings - reconfigure
+        logger.info("Updating automatic monitoring...")
+        success, message = setup_monitoring(monitoring.check_interval_minutes)
+        if success:
+            setup_message = f"\n\n🔄 Monitoring updated!\n{message}"
+
+    # Format response
+    enabled_text = "enabled" if monitoring.enabled else "disabled"
+
+    base_message = i18n.t(
+        "messages.monitoring_configured",
+        enabled=enabled_text,
+        minutes=monitoring.notification_before_minutes,
+        interval=monitoring.check_interval_minutes
+    )
+
+    return [TextContent(
+        type="text",
+        text=base_message + setup_message
+    )]
+
+
+async def handle_check_upcoming_outages(arguments: dict) -> list[TextContent]:
+    """Handle check_upcoming_outages tool."""
+    # Get monitoring config first - check if enabled before anything else
+    monitoring = config.get_monitoring()
+
+    if not monitoring.enabled:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.monitoring_disabled")
+        )]
+
+    # Check if address is configured
+    address = config.get_address()
+    if not address:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.address_not_configured")
+        )]
+
+    # Load schedule from cache
+    cached = config.load_schedule_cache()
+    if not cached or not cached.actual_schedules:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.no_schedule_data")
+        )]
+
+    # Find upcoming outages within notification window
+    now = datetime.now()
+    current_hour = now.hour
+    current_minute = now.minute
+
+    # Filter only actual schedules
+    actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
+
+    # Find outages starting within notification window
+    upcoming_outages = []
+    for schedule in actual_schedules:
+        # Calculate time until outage starts
+        time_until_outage_minutes = (schedule.start_hour - current_hour) * 60 - current_minute
+
+        # Check if outage is within notification window
+        if 0 <= time_until_outage_minutes <= monitoring.notification_before_minutes:
+            upcoming_outages.append((schedule, time_until_outage_minutes))
+
+    # If there are upcoming outages, send alert
+    if upcoming_outages:
+        # Get the closest outage
+        closest_outage, minutes_until = min(upcoming_outages, key=lambda x: x[1])
+
+        # Format outage details
+        time_str = f"{closest_outage.start_hour:02d}:00-{closest_outage.end_hour:02d}:00"
+        date_str = f"{closest_outage.date} " if closest_outage.date else ""
+        outage_type_desc = i18n.t(f"messages.outage_types.{closest_outage.outage_type}")
+
+        details = f"📅 {date_str}{closest_outage.day_of_week}\n"
+        details += f"⏰ {time_str}\n"
+        details += f"📊 {outage_type_desc}"
+
+        return [TextContent(
+            type="text",
+            text=i18n.t(
+                "messages.upcoming_outage_alert",
+                minutes=int(minutes_until),
+                details=details
+            )
+        )]
+
+    # No upcoming outages - find next scheduled outage for informational purposes
+    today_date = now.strftime("%d.%m.%y")
+    next_outage = None
+    for schedule in actual_schedules:
+        # Check if this is today's schedule
+        if schedule.date == today_date:
+            # For today, only consider outages that haven't ended yet
+            if schedule.end_hour > current_hour:
+                next_outage = schedule
+                break
+        else:
+            # For future dates (tomorrow), take the first one
+            next_outage = schedule
+            break
+
+    if not next_outage and actual_schedules:
+        # If no outage today and no future dates found, take first schedule as fallback
+        next_outage = actual_schedules[0]
+
+    if next_outage:
+        time_str = f"{next_outage.start_hour:02d}:00-{next_outage.end_hour:02d}:00"
+        date_str = f"{next_outage.date} " if next_outage.date else ""
+        outage_type_desc = i18n.t(f"messages.outage_types.{next_outage.outage_type}")
+
+        next_outage_info = f"  {date_str}{next_outage.day_of_week}, {time_str}\n"
+        next_outage_info += f"  {outage_type_desc}"
+    else:
+        next_outage_info = i18n.t("messages.no_next_outage")
+
+    return [TextContent(
+        type="text",
+        text=i18n.t(
+            "messages.no_upcoming_outages",
+            minutes=monitoring.notification_before_minutes,
+            next_outage=next_outage_info
+        )
+    )]
 
 
 async def main():

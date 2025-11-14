@@ -106,13 +106,13 @@ class DTEKParser:
         # Wait for schedule tables to load
         await self._wait_for_schedule_tables()
 
-        # Get page HTML
-        html = await self.page.content()
+        # Parse all actual schedules (for all available dates)
+        actual_schedules = await self._parse_all_actual_schedules()
 
-        # Parse schedules
-        actual_schedules = self._parse_actual_schedule(html)
+        # Parse possible schedules
         possible_schedules = []
         if include_possible:
+            html = await self.page.content()
             possible_schedules = self._parse_possible_schedule(html)
 
         return ScheduleCache(
@@ -294,6 +294,52 @@ class DTEKParser:
         # TODO: Wait for specific elements that indicate tables are loaded
         # For now, just wait a bit
         await asyncio.sleep(2)
+
+    async def _parse_all_actual_schedules(self) -> list[OutageSchedule]:
+        """
+        Parse all actual schedules by clicking each date tab.
+
+        Returns:
+            List of OutageSchedule objects for all available dates (today/tomorrow)
+        """
+        all_schedules = []
+
+        try:
+            # Find all date tabs in .dates div
+            date_elements = await self.page.query_selector_all('.dates .date')
+
+            print(f"Found {len(date_elements)} date tabs")
+
+            # Click each date tab and parse its schedule
+            for i, date_elem in enumerate(date_elements):
+                try:
+                    print(f"Clicking date tab {i+1}/{len(date_elements)}")
+
+                    # Click the date tab
+                    await date_elem.click()
+
+                    # Wait for table to update
+                    await asyncio.sleep(0.5)
+
+                    # Get HTML and parse schedule
+                    html = await self.page.content()
+                    schedules = self._parse_actual_schedule(html)
+
+                    print(f"  Parsed {len(schedules)} schedules from date tab {i+1}")
+                    all_schedules.extend(schedules)
+
+                except Exception as e:
+                    print(f"Error parsing date tab {i+1}: {e}")
+                    continue
+
+            print(f"Total actual schedules parsed: {len(all_schedules)}")
+
+        except Exception as e:
+            print(f"Error in _parse_all_actual_schedules: {e}")
+            import traceback
+            traceback.print_exc()
+
+        return all_schedules
 
     def _parse_actual_schedule(self, html: str) -> list[OutageSchedule]:
         """
@@ -506,19 +552,19 @@ class DTEKParser:
 
         # Check for different outage types
         if 'cell-scheduled' in classes_str and 'maybe' not in classes_str:
-            return OutageType.DEFINITE  # Світла немає
+            return OutageType.DEFINITE
 
         if 'cell-first-half' in classes_str:
-            return OutageType.FIRST_30_MIN  # Перші 30 хв
+            return OutageType.FIRST_30_MIN
 
         if 'cell-second-half' in classes_str:
-            return OutageType.SECOND_30_MIN  # Другі 30 хв
+            return OutageType.SECOND_30_MIN
 
         if 'cell-scheduled-maybe' in classes_str:
-            return OutageType.POSSIBLE  # Можливо відключення
+            return OutageType.POSSIBLE
 
         if 'cell-non-scheduled' in classes_str:
-            return None  # Світло є - не додаємо до schedules
+            return None
 
         return None
 
@@ -613,7 +659,7 @@ if __name__ == "__main__":
         try:
             cache = await fetch_dtek_schedule(
                 city="м. Дніпро",
-                street="Просп. Миру",
+                street="Вул. Вʼячеслава Липинського",
                 house_number="4"
             )
             print(f"Fetched {len(cache.actual_schedules)} actual schedules")

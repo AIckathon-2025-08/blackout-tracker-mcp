@@ -10,15 +10,36 @@ services:
     tty: true         # Allocate a pseudo-TTY
     volumes:
       # Mount configuration directory to persist address and cache
-      - mcp-config:/root/.config/blackout_tracker_mcp
+      - mcp-config:/home/mcpuser/.config/blackout_tracker_mcp
       # Optional: Mount source code for development (comment out for production)
       # - ./src:/app/src:ro
     environment:
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=Europe/Kyiv  # Set timezone to Ukraine
     restart: unless-stopped
     # Note: No ports exposed as MCP uses stdio for communication
     # The container will be accessed via docker exec or integrated into Claude Desktop
+
+  # Notification Daemon - Automatically monitors and sends notifications
+  notification-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blackout-tracker-mcp:latest
+    container_name: blackout-notifier
+    volumes:
+      # Share config with main server
+      - mcp-config:/home/mcpuser/.config/blackout_tracker_mcp
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TERM=xterm-256color  # Enable terminal colors and escape sequences
+      - TZ=Europe/Kyiv  # Set timezone to Ukraine
+    entrypoint: []  # Override Dockerfile ENTRYPOINT
+    command: ["python", "-m", "src.monitor_outages_daemon"]
+    restart: unless-stopped
+    depends_on:
+      - mcp-server
 
   # Test runner service (for running tests in containerized environment)
   test-runner:

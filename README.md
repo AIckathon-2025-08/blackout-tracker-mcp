@@ -55,11 +55,12 @@ This MCP server helps track scheduled electricity outages and provides timely no
 ### Key Features
 
 - 🔍 **Schedule Checking** - Get outage schedules for your specific address
-- ⏰ **Smart Notifications** - Get notified 1 hour (configurable) before outages
-- 📊 **Change Detection** - Automatic schedule monitoring and change alerts
-- 🔋 **Charging Calculator** - Smart calculation of optimal charging time (in development)
-- 🌐 **Real-time Parsing** - Live data from DTEK website
-- 💾 **Smart Caching** - 1-hour cache to reduce server load
+- ⏰ **Automatic Notifications** - Background daemon starts automatically with `docker-compose up`!
+- 🤖 **Terminal Notifications** - Visual notifications in your terminal (iTerm2/Terminal.app)
+- 📊 **Real-time Monitoring** - Daemon checks schedule every N minutes
+- 🌐 **Live Data** - Direct parsing from DTEK website
+- 💾 **Smart Caching** - 1-hour cache to reduce load
+- 🐳 **Zero Configuration** - Everything works out of the box with Docker
 
 ## Claude Code Setup
 
@@ -86,10 +87,17 @@ cd blackout_tracker_mcp
 docker-compose build
 ```
 
-**3. Start the MCP server:**
+**3. Start both MCP server and notification daemon:**
 ```bash
-docker-compose up -d mcp-server
+docker-compose up -d
+
+# or:
+docker-compose up -d mcp-server && docker-compose up -d notification-daemon
 ```
+
+This will start:
+- `mcp-server` - Main MCP server (handles Claude requests)
+- `notification-daemon` - Background notification daemon (monitors for outages)
 
 **4. Configure Claude:**
 
@@ -114,7 +122,10 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 }
 ```
 
-**Important:** Add `"mcpServers"` at the **root level** of `~/.claude.json`, **before** the `"projects"` section (not inside it). This makes the MCP server available globally across all projects.
+**Important:**
+- Add `"mcpServers"` at the **root level** of `~/.claude.json`, **before** the `"projects"` section (not inside it)
+- This makes the MCP server available globally across all projects
+- The notification daemon runs automatically in background!
 
 **5. Restart Claude Code/Desktop** and check `claude mcp list`
 
@@ -122,20 +133,36 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 
 **Useful Docker commands:**
 ```bash
-# View logs
+# View MCP server logs
 docker-compose logs -f mcp-server
 
-# Stop the server
+# View notification daemon logs (see monitoring in action!)
+docker-compose logs -f notification-daemon
+
+# View both logs together
+docker-compose logs -f
+
+# Stop all services
 docker-compose down
 
-# Restart after code changes
+# Restart MCP server after code changes
 docker-compose restart mcp-server
+
+# Restart notification daemon
+docker-compose restart notification-daemon
 
 # Run tests
 docker-compose --profile test run --rm test-runner
 # Or run one test specifically:
 docker exec -i blackout-tracker-mcp python tests/test_apostrophe_normalization.py
 ```
+
+**Notification Daemon:**
+The notification daemon automatically:
+- Starts when you run `docker-compose up -d`
+- Checks for upcoming outages every N minutes (configurable)
+- Sends terminal notifications when outage is approaching
+- Keeps running in background even when Claude is closed
 
 ---
 
@@ -253,6 +280,8 @@ After connecting the MCP server, you'll see available tools:
 - `check_outage_schedule` - Check outage schedules
 - `get_next_outage` - Find the next upcoming outage
 - `get_outages_for_day` - Get all outages for a specific day
+- `configure_monitoring` - Configure notification settings
+- `check_upcoming_outages` - Check for upcoming outages and get alerts
 
 ## Language Support
 
@@ -297,6 +326,7 @@ Check electricity outage schedule for today (with time when we have electricity 
 When is the next outage?
 Show all outages for Monday
 Include possible outages for the week
+Enable notifications 50 minutes before outages
 ```
 
 #### Ukrainian Commands:
@@ -306,6 +336,7 @@ Include possible outages for the week
 Коли наступне відключення?
 Покажи всі відключення на понеділок
 Включи можливі відключення на тиждень
+Увімкни сповіщення за 50 хвилин до відключень
 ```
 
 **Note:** The language setting only affects the **output format** (tool descriptions and responses). You can speak to Claude in any language regardless of the configured language.
@@ -371,6 +402,53 @@ Outages (5):
   ...
 ```
 
+```
+You: Enable notifications 30 minutes before outages
+
+Claude: [Calls configure_monitoring]
+✓ Monitoring configured:
+  Notifications: enabled
+  Notify 30 minutes before outage
+  Check interval: 60 minutes
+  
+  The notification daemon is now running automatically in Docker and will monitor your outage schedule. You'll receive an
+   alert 47 minutes before any scheduled power outage at your address.
+
+  Based on your next outage (01:00-02:00 tonight), you should receive a notification around 00:13 if the daemon picks it up in time.
+```
+
+**That's it!** The notification daemon (already running in background) will:
+- Check schedule every 60 minutes (configurable)
+- Send terminal notifications 30 minutes before outage
+- Keep monitoring even when Claude is closed
+
+**View daemon logs:**
+```bash
+docker-compose logs -f notification-daemon
+```
+
+You'll see output like:
+```
+[23:27:18] Check #1: Looking for upcoming outages...
+✓ No upcoming outages in next 30 min
+   Next check in 60 minutes
+```
+
+```
+You: Check for upcoming outages
+
+Claude: [Calls check_upcoming_outages]
+⚠️ UPCOMING OUTAGE ALERT
+
+Power outage starting in 25 minutes!
+
+📅 14.11.25 Thursday
+⏰ 18:00-19:00
+📊 Definite outage ✗
+
+Prepare now: charge devices, save work.
+```
+
 ## Available Tools
 
 ### `set_address`
@@ -422,6 +500,51 @@ Gets all outages for a specific day of the week.
 - `schedule_type` (str, optional): Schedule type - "actual" (accurate) or "possible_week" (forecast). Default: "actual"
 
 **Returns:** List of all outages for the specified day with times and types
+
+### `configure_monitoring`
+
+Configures notification and monitoring settings.
+
+**Parameters:**
+- `notification_before_minutes` (int, optional): How many minutes before outage to send notification. Default: 60
+- `enabled` (bool, optional): Enable or disable monitoring notifications. Default: false
+- `check_interval_minutes` (int, optional): How often to check for updates in minutes. Default: 60
+
+**Returns:** Confirmation of monitoring settings
+
+**Example:**
+```
+Configure monitoring: enable notifications 30 minutes before outages
+```
+
+### `check_upcoming_outages`
+
+Checks for upcoming outages based on configured notification settings. Returns an alert if an outage is approaching within the notification window.
+
+**Parameters:** None (uses configured address and monitoring settings)
+
+**Returns:**
+- Alert message if outage is approaching within notification window
+- Status message if no upcoming outages
+- Reminder to enable monitoring if disabled
+
+**Example:**
+```
+Check for upcoming outages
+```
+
+**Note:** This tool respects the monitoring configuration set via `configure_monitoring`. Make sure monitoring is enabled and notification window is configured.
+
+**Automatic Setup:** When you enable monitoring, the system **automatically** sets up background monitoring (LaunchAgent on macOS, cron on Linux). No manual configuration needed! Just say:
+```
+Enable notifications 40 minutes before outages
+```
+
+And the system will:
+1. ✓ Save your settings
+2. ✓ Automatically create LaunchAgent/cron job
+3. ✓ Start checking in background every N minutes
+4. ✓ Send system notifications when outage approaches
 
 ## Data Source
 

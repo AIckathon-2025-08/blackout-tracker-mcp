@@ -4,7 +4,8 @@
     "check_outage_schedule": "Checks electricity outage schedule for configured address. Always fetches both accurate schedule for today/tomorrow (ACTUAL) and weekly forecast (POSSIBLE_WEEK) from DTEK website. Parameter include_possible controls whether to show forecast in output. Make sure address is configured via set_address first. Can be run this way: 'Check electricity outage schedule for today (with time when we have electricity too)'.",
     "get_next_outage": "Finds the next upcoming electricity outage from accurate schedule (ACTUAL). Shows when and for how long the outage is scheduled. Works only with accurate schedule for today/tomorrow.",
     "get_outages_for_day": "Gets all outages for specific day of week. Can retrieve both accurate schedule (ACTUAL) for today/tomorrow and forecast (POSSIBLE_WEEK).",
-    "configure_monitoring": "Configures monitoring parameters."
+    "configure_monitoring": "Configures monitoring and notification settings. Automatically sets up background monitoring (cron job/LaunchAgent) when enabled. Set how many minutes before outage to notify, enable/disable notifications, and configure check interval. Everything is automatic - no manual setup required!",
+    "check_upcoming_outages": "Checks for upcoming outages based on configured notification settings. Returns notification if outage is approaching within configured time window. Use this to get proactive alerts about upcoming power cuts."
   },
   "tool_params": {
     "city": "City with prefix, e.g. 'м. Дніпро', 'м. Київ'",
@@ -13,7 +14,10 @@
     "include_possible": "Show weekly forecast in output (data is always fetched and cached)",
     "force_refresh": "Force refresh data from website (ignore cache)",
     "day_of_week": "Day of week in Ukrainian: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя",
-    "schedule_type": "Schedule type: 'actual' - accurate schedule (today/tomorrow), 'possible_week' - weekly forecast"
+    "schedule_type": "Schedule type: 'actual' - accurate schedule (today/tomorrow), 'possible_week' - weekly forecast",
+    "notification_before_minutes": "How many minutes before outage to send notification (default: 60)",
+    "enabled": "Enable or disable monitoring notifications (default: false)",
+    "check_interval_minutes": "How often to check for updates in minutes (default: 60)"
   },
   "messages": {
     "address_saved": "✓ Address saved: {address}\n\nYou can now use check_outage_schedule to check outage schedules.",
@@ -25,6 +29,10 @@
     "no_outages_for_day": "No outages found for day: {day} ({schedule_type})",
     "fetching_schedule": "Fetching schedule for {address}",
     "error_fetching": "Error fetching schedule: {error}\n\nMake sure address is correct and exists on DTEK website.",
+    "monitoring_configured": "✓ Monitoring configured:\n  Notifications: {enabled}\n  Notify {minutes} minutes before outage\n  Check interval: every {interval} minutes",
+    "monitoring_disabled": "Monitoring is disabled. Enable it using configure_monitoring with enabled=true.",
+    "upcoming_outage_alert": "⚠️ UPCOMING OUTAGE ALERT\n\nPower outage starting in {minutes} minutes!\n\n{details}\n\nPrepare now: charge devices, save work.",
+    "no_upcoming_outages": "✓ No upcoming outages in the next {minutes} minutes.\n\nNext scheduled outage:\n{next_outage}",
     "outage_types": {
       "definite": "Definite outage ✗",
       "first_30min": "No power first 30 min ⚡",

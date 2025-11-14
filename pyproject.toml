@@ -1,0 +1,39 @@
+[project]
+name = "electricity-shutdowns-mcp"
+version = "0.1.0"
+description = "MCP server for monitoring electricity shutdown schedules in Ukraine (DTEK)"
+authors = [
+    {name = "Yaroslav Yenkala"},
+    {name = "Bohdan Perchuk"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=0.9.0",
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "python-dateutil>=2.8.2",
+    "playwright>=1.40.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

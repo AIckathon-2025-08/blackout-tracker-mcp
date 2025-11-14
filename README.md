@@ -9,8 +9,6 @@ An MCP server for monitoring electricity outage schedules in Ukraine (DTEK Dnipr
   - [Option A: Using Docker (Recommended)](#option-a-using-docker-recommended-for-daily-use)
   - [Option B: Using Local Python Environment](#option-b-using-local-python-environment-for-development)
   - [Alternative: Using mcp.json](#alternative-using-mcpjson-quick-testing)
-- [Installation (For development)](#installation-for-development)
-- [Docker Setup (Alternative)](#docker-setup-alternative)
 - [Usage](#usage)
   - [Basic Workflow](#basic-workflow)
   - [Usage Examples](#usage-examples)
@@ -53,10 +51,28 @@ Choose one of the following approaches based on your needs:
 **Best for:** Production/home use, no need to manage Python dependencies
 
 **Prerequisites:**
-- Docker and docker-compose installed
-- Container must be running: `docker-compose up -d mcp-server`
+- Docker installed ([Get Docker](https://docs.docker.com/get-docker/))
+- Docker Compose (usually comes with Docker Desktop)
 
-**Configuration:**
+**Step-by-step setup:**
+
+**1. Clone the repository:**
+```bash
+git clone <repository-url>
+cd blackout_tracker_mcp
+```
+
+**2. Build the Docker image:**
+```bash
+docker-compose build
+```
+
+**3. Start the MCP server:**
+```bash
+docker-compose up -d mcp-server
+```
+
+**4. Configure Claude:**
 
 Open your Claude configuration file (`code ~/.claude.json`) and add:
 
@@ -78,17 +94,26 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 }
 ```
 
+**5. Restart Claude Code/Desktop**
+
 **That's it!** No absolute paths needed. Docker handles everything.
 
-**Step-by-step for beginners:**
-1. Start the container: `docker-compose up -d mcp-server`
-2. Edit config: `code ~/.claude.json`
-3. Paste the JSON above
-4. Restart Claude Code/Desktop
+**Useful Docker commands:**
+```bash
+# View logs
+docker-compose logs -f mcp-server
+
+# Stop the server
+docker-compose down
+
+# Restart after code changes
+docker-compose restart mcp-server
+
+# Run tests
+docker-compose --profile test run --rm test-runner
+```
 
 ---
-
-You can go to #Usage section to see how to use the MCP server.
 
 ### Option B: Using Local Python Environment (For Development)
 
@@ -96,9 +121,40 @@ You can go to #Usage section to see how to use the MCP server.
 
 **Prerequisites:**
 - Python 3.11+ installed
-- Virtual environment created and activated
+- Internet connection to access DTEK website
 
-**Configuration:**
+**Step-by-step setup:**
+
+**1. Clone the repository:**
+```bash
+git clone <repository-url>
+cd blackout_tracker_mcp
+```
+
+**2. Create virtual environment:**
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+**3. Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**4. Install Playwright browser:**
+```bash
+playwright install chromium
+```
+
+**5. Verify installation:**
+```bash
+python tests/test_mcp_server.py
+```
+
+You should see: `✓ ALL VALIDATIONS PASSED`
+
+**6. Configure Claude:**
 
 Open your Claude configuration file (`code ~/.claude.json`) and add:
 
@@ -107,10 +163,7 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
   "mcpServers": {
     "blackout-tracker": {
       "command": "/ABSOLUTE/PATH/TO/PROJECT/venv/bin/python",
-      "args": [
-        "-m",
-        "src.server"
-      ],
+      "args": ["-m", "src.server"],
       "cwd": "/ABSOLUTE/PATH/TO/PROJECT",
       "env": {}
     }
@@ -118,7 +171,7 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 }
 ```
 
-**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project (`blackout_tracker_mcp`).
+**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project.
 
 **How to find your absolute path:**
 ```bash
@@ -126,7 +179,7 @@ cd blackout_tracker_mcp
 pwd  # This shows your absolute path
 ```
 
-**Example for macOS:**
+**Example for macOS/Linux:**
 ```json
 {
   "mcpServers": {
@@ -134,20 +187,6 @@ pwd  # This shows your absolute path
       "command": "/Users/john/projects/blackout_tracker_mcp/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/Users/john/projects/blackout_tracker_mcp",
-      "env": {}
-    }
-  }
-}
-```
-
-**Example for Linux:**
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "/home/john/projects/blackout_tracker_mcp/venv/bin/python",
-      "args": ["-m", "src.server"],
-      "cwd": "/home/john/projects/blackout_tracker_mcp",
       "env": {}
     }
   }
@@ -168,6 +207,8 @@ pwd  # This shows your absolute path
 }
 ```
 
+**7. Restart Claude Code/Desktop**
+
 ---
 
 ### Alternative: Using mcp.json (Quick Testing)
@@ -183,157 +224,6 @@ After connecting the MCP server, you'll see available tools:
 - `check_outage_schedule` - Check outage schedules
 - `get_next_outage` - Find the next upcoming outage
 - `get_outages_for_day` - Get all outages for a specific day
-
-## Installation (For development)
-
-## Requirements
-
-- Python 3.10 or higher
-- Claude Desktop or Claude Code
-- Internet connection to access DTEK website
-- Chromium browser (installed automatically via Playwright)
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd blackout_tracker_mcp
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Install Playwright Browser
-
-```bash
-playwright install chromium
-```
-
-### 5. Verify Installation
-
-Run the validation test to ensure everything is set up correctly:
-
-```bash
-python test_mcp_server.py
-```
-
-You should see:
-```
-✓ ALL VALIDATIONS PASSED
-```
-
-## Docker Setup (Alternative)
-
-If you prefer using Docker, you can run the MCP server in a containerized environment. This is especially useful for:
-- Consistent environment across different machines
-- Isolated dependencies (Python, Playwright, Chromium)
-- Easier deployment and testing
-- No need to install Python or Playwright locally
-
-### Prerequisites
-
-- Docker installed ([Get Docker](https://docs.docker.com/get-docker/))
-- Docker Compose installed (usually comes with Docker Desktop)
-
-### Quick Start with Docker
-
-**1. Build the Docker image:**
-
-```bash
-docker-compose build
-```
-
-**2. Run the MCP server:**
-
-```bash
-docker-compose up mcp-server
-```
-
-**3. Run tests in Docker:**
-
-```bash
-# Run validation tests
-docker-compose run --rm test-runner
-
-# Run parser tests
-docker-compose run --rm parser-test
-```
-
-**Note:** For Claude Code/Desktop integration with Docker, see the [Claude Code Setup](#claude-code-setup) section below.
-
-### Docker Commands Reference
-
-```bash
-# Build the image
-docker-compose build
-
-# Start the server in background
-docker-compose up -d mcp-server
-
-# View logs
-docker-compose logs -f mcp-server
-
-# Stop the server
-docker-compose down
-
-# Run tests
-docker-compose run --rm test-runner
-
-# Rebuild after code changes
-docker-compose build --no-cache
-
-# Remove all containers and volumes
-docker-compose down -v
-```
-
-### Persisting Configuration
-
-The Docker setup uses a named volume (`mcp-config`) to persist your configuration and cache:
-
-```bash
-# View volume location
-docker volume inspect blackout_tracker_mcp_mcp-config
-
-# Backup configuration
-docker run --rm -v blackout_tracker_mcp_mcp-config:/data -v $(pwd):/backup \
-  alpine tar czf /backup/mcp-config-backup.tar.gz -C /data .
-
-# Restore configuration
-docker run --rm -v blackout_tracker_mcp_mcp-config:/data -v $(pwd):/backup \
-  alpine tar xzf /backup/mcp-config-backup.tar.gz -C /data
-```
-
-### Troubleshooting Docker
-
-**Container not starting:**
-```bash
-# Check logs
-docker-compose logs mcp-server
-
-# Check if port conflicts exist
-docker ps -a
-
-# Rebuild from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up
-```
-
-**Playwright/Chromium issues:**
-```bash
-# The Dockerfile includes all necessary dependencies
-# If you still encounter issues, try rebuilding:
-docker-compose build --no-cache
-```
 
 ## Usage
 

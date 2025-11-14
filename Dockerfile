@@ -5,7 +5,8 @@ FROM python:3.11-slim as base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/app/src
 
 # Install system dependencies required for Playwright
 RUN apt-get update && apt-get install -y \

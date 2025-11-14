@@ -33,6 +33,19 @@ An MCP server for monitoring electricity outage schedules in Ukraine (DTEK Dnipr
 
 This MCP server helps track scheduled electricity outages and provides timely notifications about upcoming shutdowns. Especially useful for planning laptop charging and managing other devices during power outages.
 
+## Screenshots
+
+- Set address:
+
+![img.png](screenshots/set_address.png)
+
+- Check next electricity outage:
+
+![img.png](screenshots/check_next_outage.png)
+
+- Check electricity outage for specific date:
+![img.png](screenshots/check_outage_for_today.png)
+
 ### Key Features
 
 - 🔍 **Schedule Checking** - Get outage schedules for your specific address
@@ -97,7 +110,7 @@ Open your Claude configuration file (`code ~/.claude.json`) and add:
 
 **Important:** Add `"mcpServers"` at the **root level** of `~/.claude.json`, **before** the `"projects"` section (not inside it). This makes the MCP server available globally across all projects.
 
-**5. Restart Claude Code/Desktop**
+**5. Restart Claude Code/Desktop** and check `claude mcp list`
 
 **That's it!** No absolute paths needed. Docker handles everything.
 
@@ -234,6 +247,62 @@ After connecting the MCP server, you'll see available tools:
 - `check_outage_schedule` - Check outage schedules
 - `get_next_outage` - Find the next upcoming outage
 - `get_outages_for_day` - Get all outages for a specific day
+
+## Language Support
+
+The MCP server supports **English** (default) and **Ukrainian** languages.
+
+### Default Language
+
+By default, all tool descriptions and responses are in **English**. This makes the server accessible to international users.
+
+### Using Ukrainian Language
+
+To use Ukrainian language, you need to configure it in the config file:
+
+**1. Locate the config file:**
+```bash
+~/.config/blackout_tracker_mcp/config.json
+```
+
+**2. Add or modify the language setting:**
+```json
+{
+  "language": "uk",
+  "address": {
+    "city": "м. Дніпро",
+    "street": "вул. Вʼячеслава Липинського",
+    "house_number": "4"
+  }
+}
+```
+
+**3. Restart the MCP server** (restart Claude Code/Desktop or Docker container)
+
+### Commands in Both Languages
+
+You can use natural language in either English or Ukrainian when talking to Claude. Here are examples:
+
+#### English Commands:
+```
+Set my address to м. Дніпро, вул. Вʼячеслава Липinського, 4
+Check electricity outage schedule
+Check electricity outage schedule for today (with time when we have electricity too and summary)
+When is the next outage?
+Show all outages for Monday
+Include possible outages for the week
+```
+
+#### Ukrainian Commands:
+```
+Встанови мою адресу: м. Дніпро, вул. Вʼячеслава Липинського, 4
+Перевір графік відключень світла
+Коли наступне відключення?
+Покажи всі відключення на понеділок
+Включи можливі відключення на тиждень
+```
+
+**Note:** The language setting only affects the **output format** (tool descriptions and responses). You can speak to Claude in any language regardless of the configured language.
 
 ## Usage
 
@@ -494,6 +563,9 @@ docker-compose run --rm --entrypoint python test-runner tests/test_mcp_server.py
 # Run apostrophe normalization test
 docker-compose run --rm --entrypoint python test-runner tests/test_apostrophe_normalization.py
 
+# Run internationalization test
+docker-compose run --rm --entrypoint python test-runner tests/test_i18n.py
+
 # Run parser integration test
 docker-compose run --rm --entrypoint python test-runner tests/test_fill_form.py
 ```
@@ -513,6 +585,9 @@ python tests/test_mcp_server.py
 
 # Apostrophe normalization test (regression test)
 python tests/test_apostrophe_normalization.py
+
+# Internationalization test
+python tests/test_i18n.py
 ```
 
 ### Running Unit Tests (when available)
@@ -526,11 +601,12 @@ pytest tests/
 - [x] Basic DTEK website parsing
 - [x] Core MCP tools
 - [x] Claude Code integration
+- [x] Internationalization (English + Ukrainian)
+- [x] Docker containerization
 - [ ] Automatic monitoring and notifications (Phase 5)
-- [ ] Internationalization (English + Ukrainian) (Phase 7)
-- [ ] Smart charging time calculator (Phase 8)
-- [ ] Multiple addresses support (Phase 8)
-- [ ] Schedule change history (Phase 8)
+- [ ] Smart charging time calculator (Phase 9)
+- [ ] Multiple addresses support (Phase 9)
+- [ ] Schedule change history (Phase 9)
 
 ## Resources
 

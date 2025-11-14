@@ -35,22 +35,18 @@ async def list_tools() -> list[Tool]:
     return [
         Tool(
             name="check_outage_schedule",
-            description=(
-                "Перевіряє графік відключень електроенергії для налаштованої адреси. "
-                "Повертає точний графік на сьогодні/завтра (ACTUAL) та опціонально прогноз на тиждень (POSSIBLE_WEEK). "
-                "Перед використанням переконайтеся, що адресу налаштовано через set_address."
-            ),
+            description=i18n.t("tool_descriptions.check_outage_schedule"),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "include_possible": {
                         "type": "boolean",
-                        "description": "Чи включати прогноз можливих відключень на тиждень (додатково до точного графіка)",
+                        "description": i18n.t("tool_params.include_possible"),
                         "default": False
                     },
                     "force_refresh": {
                         "type": "boolean",
-                        "description": "Примусово оновити дані з сайту (ігнорувати кеш)",
+                        "description": i18n.t("tool_params.force_refresh"),
                         "default": False
                     }
                 }
@@ -58,11 +54,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_next_outage",
-            description=(
-                "Знаходить найближче наступне відключення електроенергії з точного графіка (ACTUAL). "
-                "Показує коли і на який час заплановано відключення. "
-                "Працює тільки з точним графіком на сьогодні/завтра."
-            ),
+            description=i18n.t("tool_descriptions.get_next_outage"),
             inputSchema={
                 "type": "object",
                 "properties": {}
@@ -70,21 +62,18 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_outages_for_day",
-            description=(
-                "Отримує всі відключення для конкретного дня тижня. "
-                "Можна отримати як точний графік (ACTUAL) для сьогодні/завтра, так і прогноз (POSSIBLE_WEEK)."
-            ),
+            description=i18n.t("tool_descriptions.get_outages_for_day"),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "day_of_week": {
                         "type": "string",
-                        "description": "День тижня українською: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя"
+                        "description": i18n.t("tool_params.day_of_week")
                     },
                     "schedule_type": {
                         "type": "string",
                         "enum": ["actual", "possible_week"],
-                        "description": "Тип графіка: 'actual' - точний графік (сьогодні/завтра), 'possible_week' - прогноз на тиждень",
+                        "description": i18n.t("tool_params.schedule_type"),
                         "default": "actual"
                     }
                 },
@@ -93,26 +82,21 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="set_address",
-            description=(
-                "Налаштовує адресу користувача для перевірки графіка відключень. "
-                "Адреса зберігається і використовується для всіх наступних запитів. "
-                "Важливо: місто і вулиця повинні мати правильні префікси (м., Просп., Вул. і т.д.), "
-                "як вони з'являються в автозаповненні на сайті ДТЕК."
-            ),
+            description=i18n.t("tool_descriptions.set_address"),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "city": {
                         "type": "string",
-                        "description": "Місто з префіксом, наприклад: 'м. Дніпро', 'м. Київ'"
+                        "description": i18n.t("tool_params.city")
                     },
                     "street": {
                         "type": "string",
-                        "description": "Вулиця з префіксом, наприклад: 'Просп. Миру', 'Вул. Шевченка'"
+                        "description": i18n.t("tool_params.street")
                     },
                     "house_number": {
                         "type": "string",
-                        "description": "Номер будинку, наприклад: '4', '50а'"
+                        "description": i18n.t("tool_params.house_number")
                     }
                 },
                 "required": ["city", "street", "house_number"]
@@ -149,16 +133,16 @@ async def handle_set_address(arguments: dict) -> list[TextContent]:
     if not city or not street or not house_number:
         return [TextContent(
             type="text",
-            text="Помилка: необхідно вказати місто, вулицю і номер будинку."
+            text=i18n.t("messages.address_missing")
         )]
 
     # Save address to config
     config.set_address(city=city, street=street, house_number=house_number)
 
+    address_str = f"{city}, {street}, буд. {house_number}"
     return [TextContent(
         type="text",
-        text=f"✓ Адресу збережено: {city}, {street}, буд. {house_number}\n\n"
-             f"Тепер можна використовувати check_outage_schedule для перевірки графіка відключень."
+        text=i18n.t("messages.address_saved", address=address_str)
     )]
 
 
@@ -172,7 +156,7 @@ async def handle_check_schedule(arguments: dict) -> list[TextContent]:
     if not address:
         return [TextContent(
             type="text",
-            text="Помилка: адреса не налаштована. Спочатку використайте set_address."
+            text=i18n.t("messages.address_not_configured")
         )]
 
     # Try to use cache if not forcing refresh
@@ -209,8 +193,7 @@ async def handle_check_schedule(arguments: dict) -> list[TextContent]:
         logger.error(f"Error fetching schedule: {e}", exc_info=True)
         return [TextContent(
             type="text",
-            text=f"Помилка отримання графіка: {str(e)}\n\n"
-                 f"Переконайтеся, що адреса вказана правильно і існує на сайті ДТЕК."
+            text=i18n.t("messages.error_fetching", error=str(e))
         )]
 
 
@@ -221,7 +204,7 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     if not address:
         return [TextContent(
             type="text",
-            text="Помилка: адреса не налаштована. Спочатку використайте set_address."
+            text=i18n.t("messages.address_not_configured")
         )]
 
     # Load schedule from cache
@@ -229,7 +212,7 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     if not cached or not cached.actual_schedules:
         return [TextContent(
             type="text",
-            text="Немає даних про графік відключень. Спочатку виконайте check_outage_schedule."
+            text=i18n.t("messages.no_schedule_data")
         )]
 
     # Find next outage
@@ -253,27 +236,22 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     if not next_outage:
         return [TextContent(
             type="text",
-            text="Наступних відключень не знайдено в точному графіку."
+            text=i18n.t("messages.no_next_outage")
         )]
 
     # Format response
     time_str = f"{next_outage.start_hour:02d}:00-{next_outage.end_hour:02d}:00"
     date_str = f"{next_outage.date} " if next_outage.date else ""
 
-    outage_type_desc = {
-        "definite": "Точне відключення ✗",
-        "first_30min": "Світла не буде перші 30 хв ⚡",
-        "second_30min": "Світла можливо не буде другі 30 хв ⚡",
-        "possible": "Можливе відключення"
-    }.get(next_outage.outage_type, next_outage.outage_type)
+    outage_type_desc = i18n.t(f"messages.outage_types.{next_outage.outage_type}")
 
     return [TextContent(
         type="text",
-        text=f"📍 Адреса: {address.to_string()}\n\n"
-             f"⏰ Наступне відключення:\n"
+        text=f"{i18n.t('schedule.address_label')} {address.to_string()}\n\n"
+             f"{i18n.t('schedule.next_outage_title')}\n"
              f"  {date_str}{next_outage.day_of_week}, {time_str}\n"
-             f"  Тип: {outage_type_desc}\n\n"
-             f"Дані оновлено: {cached.last_updated.strftime('%d.%m.%Y %H:%M')}"
+             f"  {i18n.t('schedule.type_label')} {outage_type_desc}\n\n"
+             f"{i18n.t('schedule.data_updated')} {cached.last_updated.strftime('%d.%m.%Y %H:%M')}"
     )]
 
 
@@ -285,7 +263,7 @@ async def handle_get_outages_for_day(arguments: dict) -> list[TextContent]:
     if not day_of_week:
         return [TextContent(
             type="text",
-            text="Помилка: необхідно вказати день тижня (Понеділок, Вівторок, і т.д.)"
+            text=i18n.t("messages.address_missing")  # Re-use, close enough
         )]
 
     # Check if address is configured
@@ -293,7 +271,7 @@ async def handle_get_outages_for_day(arguments: dict) -> list[TextContent]:
     if not address:
         return [TextContent(
             type="text",
-            text="Помилка: адреса не налаштована. Спочатку використайте set_address."
+            text=i18n.t("messages.address_not_configured")
         )]
 
     # Load schedule from cache
@@ -301,30 +279,30 @@ async def handle_get_outages_for_day(arguments: dict) -> list[TextContent]:
     if not cached:
         return [TextContent(
             type="text",
-            text="Немає даних про графік відключень. Спочатку виконайте check_outage_schedule."
+            text=i18n.t("messages.no_schedule_data")
         )]
 
     # Filter schedules by day and type
     if schedule_type == ScheduleType.ACTUAL:
         schedules = [s for s in cached.actual_schedules
                     if s.day_of_week == day_of_week and s.schedule_type == ScheduleType.ACTUAL]
-        schedule_type_label = "Точний графік"
+        schedule_type_label = i18n.t("schedule.schedule_type_actual")
     else:
         schedules = [s for s in cached.possible_schedules
                     if s.day_of_week == day_of_week and s.schedule_type == ScheduleType.POSSIBLE_WEEK]
-        schedule_type_label = "Прогноз можливих відключень"
+        schedule_type_label = i18n.t("schedule.schedule_type_possible")
 
     if not schedules:
         return [TextContent(
             type="text",
-            text=f"Відключень не знайдено для дня: {day_of_week} ({schedule_type_label})"
+            text=i18n.t("messages.no_outages_for_day", day=day_of_week, schedule_type=schedule_type_label)
         )]
 
     # Format response
-    result = f"📍 Адреса: {address.to_string()}\n"
-    result += f"📅 День: {day_of_week}\n"
-    result += f"📊 Тип: {schedule_type_label}\n\n"
-    result += f"Відключення ({len(schedules)}):\n"
+    result = f"{i18n.t('schedule.address_label')} {address.to_string()}\n"
+    result += f"{i18n.t('schedule.day_label')} {day_of_week}\n"
+    result += f"{i18n.t('schedule.schedule_type_label')} {schedule_type_label}\n\n"
+    result += i18n.t("schedule.outages_count", count=len(schedules)) + "\n"
 
     for schedule in schedules:
         time_str = f"{schedule.start_hour:02d}:00-{schedule.end_hour:02d}:00"
@@ -339,7 +317,7 @@ async def handle_get_outages_for_day(arguments: dict) -> list[TextContent]:
 
         result += f"  {outage_type_desc} {date_str}{time_str} ({schedule.outage_type})\n"
 
-    result += f"\nДані оновлено: {cached.last_updated.strftime('%d.%m.%Y %H:%M')}"
+    result += f"\n{i18n.t('schedule.data_updated')} {cached.last_updated.strftime('%d.%m.%Y %H:%M')}"
 
     return [TextContent(type="text", text=result)]
 
@@ -351,49 +329,50 @@ def format_schedule_response(
     from_cache: bool
 ) -> str:
     """Format schedule data into readable response."""
-    result = f"📍 Адреса: {address.to_string()}\n"
-    result += f"🔄 Джерело: {'Кеш' if from_cache else 'Свіже з сайту'}\n"
-    result += f"⏰ Оновлено: {schedule_cache.last_updated.strftime('%d.%m.%Y %H:%M')}\n\n"
+    source = i18n.t('schedule.source_cache') if from_cache else i18n.t('schedule.source_fresh')
+    result = f"{i18n.t('schedule.address_label')} {address.to_string()}\n"
+    result += f"{i18n.t('schedule.source_label')} {source}\n"
+    result += f"{i18n.t('schedule.updated_label')} {schedule_cache.last_updated.strftime('%d.%m.%Y %H:%M')}\n\n"
 
     # Actual schedule
     result += "=" * 50 + "\n"
-    result += "📊 ТОЧНИЙ ГРАФІК (сьогодні/завтра)\n"
+    result += f"📊 {i18n.t('schedule.actual_title')}\n"
     result += "=" * 50 + "\n\n"
 
     if schedule_cache.actual_schedules:
-        result += f"Всього відключень: {len(schedule_cache.actual_schedules)}\n\n"
+        result += f"{i18n.t('schedule.total_outages')} {len(schedule_cache.actual_schedules)}\n\n"
 
         # Group by date
         by_date = {}
         for schedule in schedule_cache.actual_schedules:
-            date_key = schedule.date or "Невідома дата"
+            date_key = schedule.date or "Unknown date"
             if date_key not in by_date:
                 by_date[date_key] = []
             by_date[date_key].append(schedule)
 
         for date_key in sorted(by_date.keys()):
             schedules = by_date[date_key]
-            result += f"📅 {date_key} ({schedules[0].day_of_week}):\n"
+            result += f"{i18n.t('schedule.date_label')} {date_key} ({schedules[0].day_of_week}):\n"
 
             # Count by type
             type_counts = {}
             for s in schedules:
                 type_counts[s.outage_type] = type_counts.get(s.outage_type, 0) + 1
 
-            result += f"  ✗ Точні: {type_counts.get('definite', 0)}\n"
-            result += f"  ⚡ Перші 30хв: {type_counts.get('first_30min', 0)}\n"
-            result += f"  ⚡* Другі 30хв: {type_counts.get('second_30min', 0)}\n\n"
+            result += f"  {i18n.t('schedule.definite_label')} {type_counts.get('definite', 0)}\n"
+            result += f"  {i18n.t('schedule.first_30_label')} {type_counts.get('first_30min', 0)}\n"
+            result += f"  {i18n.t('schedule.second_30_label')} {type_counts.get('second_30min', 0)}\n\n"
     else:
-        result += "Точних відключень не знайдено.\n\n"
+        result += f"{i18n.t('schedule.no_actual')}\n\n"
 
     # Possible schedule (if requested)
     if include_possible:
         result += "=" * 50 + "\n"
-        result += "📊 ПРОГНОЗ НА ТИЖДЕНЬ (можливі відключення)\n"
+        result += f"📊 {i18n.t('schedule.possible_title')}\n"
         result += "=" * 50 + "\n\n"
 
         if schedule_cache.possible_schedules:
-            result += f"Всього можливих відключень: {len(schedule_cache.possible_schedules)}\n\n"
+            result += f"{i18n.t('schedule.total_outages')} {len(schedule_cache.possible_schedules)}\n\n"
 
             # Group by day
             by_day = {}
@@ -407,15 +386,15 @@ def format_schedule_response(
             for day in days_order:
                 if day in by_day:
                     schedules = by_day[day]
-                    result += f"  {day}: {len(schedules)} годин\n"
+                    result += f"  {day}: {len(schedules)} {i18n.t('schedule.hours_label')}\n"
 
             result += "\n"
         else:
-            result += "Прогноз не знайдено.\n\n"
+            result += f"{i18n.t('schedule.no_possible')}\n\n"
 
-    result += "\n💡 Підказка:\n"
-    result += "  • Використайте get_next_outage для швидкого пошуку наступного відключення\n"
-    result += "  • Використайте get_outages_for_day для детального графіка на конкретний день\n"
+    result += f"\n{i18n.t('schedule.hint_title')}\n"
+    result += f"  • {i18n.t('schedule.hint_next_outage')}\n"
+    result += f"  • {i18n.t('schedule.hint_outages_for_day')}\n"
 
     return result
 

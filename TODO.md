@@ -71,7 +71,7 @@
 - [x] Fix Playwright browser installation for non-root user (mcpuser)
 - [x] Add PYTHONPATH environment variable for proper module resolution
 
-## Phase 8: Internationalization (i18n) ✅ PARTIALLY COMPLETED
+## Phase 8: Internationalization (i18n) ✅ COMPLETED
 - [x] Add English language support. Will support 2 languages: Ukrainian and English
 - [x] Create translation files (en.json, uk.json)
 - [x] Create i18n module (i18n.py) with translation helper functions
@@ -80,10 +80,21 @@
 - [x] Translate TODO.md to English
 - [x] Translate ARCHITECTURE.md to English
 - [x] Add i18n import and basic structure to server.py
-- [ ] Full server.py message localization (can be done in separate commit)
-- [ ] Testing in different languages
-- [ ] Auto-detection of language
-- [ ] Display all request options in both languages in MCP help
+- [x] Full server.py message localization
+  - [x] Localized list_tools() - all tool descriptions and parameter descriptions
+  - [x] Localized handle_set_address() - all messages
+  - [x] Localized handle_check_schedule() - all messages
+  - [x] Localized handle_get_next_outage() - all messages
+  - [x] Localized handle_get_outages_for_day() - all messages
+  - [x] Localized format_schedule_response() - all labels and messages
+- [x] Add Ukrainian command examples to README
+- [x] Docker image rebuilt with i18n changes
+- [x] Testing in different languages (test_i18n.py - all tests passed)
+  - [x] English translations test
+  - [x] Ukrainian translations test
+  - [x] Translation completeness test
+- [ ] Auto-detection of language (future enhancement)
+- [ ] Display all request options in both languages in MCP help (future enhancement)
 
 ## Phase 9: Additional Features
 - [ ] Calculate optimal charging time (tool: `calculate_charging_time`)
@@ -106,6 +117,7 @@
 - [x] Testing on real addresses (Dnipro, Kryvyi Rih)
 - [x] MCP server validation test (test_mcp_server.py)
 - [x] Apostrophe normalization test (test_apostrophe_normalization.py) - regression test for Unicode apostrophe bug
+- [x] Internationalization test (test_i18n.py) - tests English, Ukrainian translations and completeness
 - [ ] Unit tests for parser (pytest)
 - [ ] Tests for MCP tools
 - [ ] End-to-end testing

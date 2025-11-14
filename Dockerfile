@@ -64,6 +64,7 @@ RUN playwright install-deps chromium
 
 # Copy application code
 COPY src/ ./src/
+COPY tests/ ./tests/
 COPY pyproject.toml .
 
 # Create directory for configuration (will be mounted as volume)

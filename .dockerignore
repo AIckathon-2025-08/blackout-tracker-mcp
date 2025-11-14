@@ -70,6 +70,6 @@ Thumbs.db
 # MCP local config (will be mounted as volume)
 .config/
 
-# Test files (will be mounted separately if needed)
-tests/
-test_*.py
+# Test files are now included in the image for running tests in Docker
+# tests/
+# test_*.py

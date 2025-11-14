@@ -4,13 +4,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: electricity-shutdowns-mcp:latest
-    container_name: electricity-shutdowns-mcp
+    image: blackout-tracker-mcp:latest
+    container_name: blackout-tracker-mcp
     stdin_open: true  # Enable stdin for MCP stdio communication
     tty: true         # Allocate a pseudo-TTY
     volumes:
       # Mount configuration directory to persist address and cache
-      - mcp-config:/root/.config/electricity_shutdowns_mcp
+      - mcp-config:/root/.config/blackout_tracker_mcp
       # Optional: Mount source code for development (comment out for production)
       # - ./src:/app/src:ro
     environment:
@@ -25,18 +25,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: electricity-shutdowns-mcp:latest
-    container_name: electricity-shutdowns-mcp-tests
+    image: blackout-tracker-mcp:latest
+    container_name: blackout-tracker-mcp-tests
     volumes:
       - ./src:/app/src:ro
-      - ./test_fill_form.py:/app/test_fill_form.py:ro
-      - ./test_visible.py:/app/test_visible.py:ro
-      - ./test_save_html.py:/app/test_save_html.py:ro
-      - ./test_mcp_server.py:/app/test_mcp_server.py:ro
+      - ./tests:/app/tests:ro
     environment:
       - PYTHONUNBUFFERED=1
     entrypoint: ["python"]
-    command: ["test_mcp_server.py"]
+    command: ["tests/test_mcp_server.py"]
     profiles:
       - test  # Only run when explicitly requested with --profile test
 
@@ -45,16 +42,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: electricity-shutdowns-mcp:latest
-    container_name: electricity-shutdowns-mcp-parser-test
+    image: blackout-tracker-mcp:latest
+    container_name: blackout-tracker-mcp-parser-test
     volumes:
       - ./src:/app/src:ro
-      - ./test_fill_form.py:/app/test_fill_form.py:ro
+      - ./tests:/app/tests:ro
     environment:
       - PYTHONUNBUFFERED=1
       - DISPLAY=${DISPLAY}  # For visible browser (X11 forwarding)
     entrypoint: ["python"]
-    command: ["test_fill_form.py"]
+    command: ["tests/test_fill_form.py"]
     profiles:
       - parser-test
 

@@ -28,7 +28,7 @@ This MCP server helps track scheduled electricity outages and provides timely no
 
 ```bash
 git clone <repository-url>
-cd electricity_shutdowns_mcp
+cd blackout_tracker_mcp
 ```
 
 ### 2. Create Virtual Environment
@@ -100,31 +100,7 @@ docker-compose run --rm test-runner
 docker-compose run --rm parser-test
 ```
 
-### Docker Configuration for Claude Desktop
-
-When using Docker, you need to configure Claude Desktop to communicate with the containerized MCP server.
-
-Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "electricity-shutdowns": {
-      "command": "docker",
-      "args": [
-        "exec",
-        "-i",
-        "electricity-shutdowns-mcp",
-        "python",
-        "-m",
-        "src.server"
-      ]
-    }
-  }
-}
-```
-
-**Important:** The container must be running (`docker-compose up -d mcp-server`) for this configuration to work.
+**Note:** For Claude Code/Desktop integration with Docker, see the [Claude Code Setup](#claude-code-setup) section below.
 
 ### Docker Commands Reference
 
@@ -157,14 +133,14 @@ The Docker setup uses a named volume (`mcp-config`) to persist your configuratio
 
 ```bash
 # View volume location
-docker volume inspect electricity_shutdowns_mcp_mcp-config
+docker volume inspect blackout_tracker_mcp_mcp-config
 
 # Backup configuration
-docker run --rm -v electricity_shutdowns_mcp_mcp-config:/data -v $(pwd):/backup \
+docker run --rm -v blackout_tracker_mcp_mcp-config:/data -v $(pwd):/backup \
   alpine tar czf /backup/mcp-config-backup.tar.gz -C /data .
 
 # Restore configuration
-docker run --rm -v electricity_shutdowns_mcp_mcp-config:/data -v $(pwd):/backup \
+docker run --rm -v blackout_tracker_mcp_mcp-config:/data -v $(pwd):/backup \
   alpine tar xzf /backup/mcp-config-backup.tar.gz -C /data
 ```
 
@@ -193,70 +169,133 @@ docker-compose build --no-cache
 
 ## Claude Code Setup
 
-There are two methods to integrate this MCP server with Claude Code/Desktop:
+Choose one of the following approaches based on your needs:
 
-### Method 1: Local Development (Recommended for Testing)
+### Option A: Using Docker (Recommended for Daily Use)
 
-This method is suitable for local development and testing.
+**Best for:** Production use, no need to manage Python dependencies
 
-**Step 1:** Ensure your virtual environment is activated
+**Prerequisites:**
+- Docker and docker-compose installed
+- Container must be running: `docker-compose up -d mcp-server`
 
-```bash
-cd electricity_shutdowns_mcp
-source venv/bin/activate  # Linux/macOS
-# or
-venv\Scripts\activate     # Windows
-```
+**Configuration:**
 
-**Step 2:** If there's an `mcp.json` file in your project directory, Claude Code will automatically detect and offer to use the MCP server.
-
-### Method 2: Global Configuration (Recommended for Daily Use)
-
-This method is suitable for permanent use with Claude Desktop.
-
-**Step 1:** Locate the Claude Desktop configuration file:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
-
-**Step 2:** Add the MCP server configuration:
-
-Open `claude_desktop_config.json` and add:
+Open your Claude configuration file (`code ~/.claude.json`) and add:
 
 ```json
 {
   "mcpServers": {
-    "electricity-shutdowns": {
+    "blackout-tracker": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "blackout-tracker-mcp",
+        "python",
+        "-m",
+        "src.server"
+      ]
+    }
+  }
+}
+```
+
+**That's it!** No absolute paths needed. Docker handles everything.
+
+**Step-by-step for beginners:**
+1. Start the container: `docker-compose up -d mcp-server`
+2. Edit config: `code ~/.claude.json`
+3. Paste the JSON above
+4. Restart Claude Code/Desktop
+
+---
+
+### Option B: Using Local Python Environment (For Development)
+
+**Best for:** Development, testing, debugging
+
+**Prerequisites:**
+- Python 3.11+ installed
+- Virtual environment created and activated
+
+**Configuration:**
+
+Open your Claude configuration file (`code ~/.claude.json`) and add:
+
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
       "command": "/ABSOLUTE/PATH/TO/PROJECT/venv/bin/python",
       "args": [
         "-m",
         "src.server"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/PROJECT/electricity_shutdowns_mcp",
+      "cwd": "/ABSOLUTE/PATH/TO/PROJECT",
       "env": {}
     }
   }
 }
 ```
 
-**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual absolute path to your project.
+**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project (`blackout_tracker_mcp`).
+
+**How to find your absolute path:**
+```bash
+cd blackout_tracker_mcp
+pwd  # This shows your absolute path
+```
 
 **Example for macOS:**
 ```json
 {
   "mcpServers": {
-    "electricity-shutdowns": {
-      "command": "/Users/username/projects/electricity_shutdowns_mcp/venv/bin/python",
+    "blackout-tracker": {
+      "command": "/Users/john/projects/blackout_tracker_mcp/venv/bin/python",
       "args": ["-m", "src.server"],
-      "cwd": "/Users/username/projects/electricity_shutdowns_mcp",
+      "cwd": "/Users/john/projects/blackout_tracker_mcp",
       "env": {}
     }
   }
 }
 ```
 
-**Step 3:** Restart Claude Desktop for changes to take effect.
+**Example for Linux:**
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "/home/john/projects/blackout_tracker_mcp/venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/home/john/projects/blackout_tracker_mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+**Example for Windows:**
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "C:\\Users\\john\\projects\\blackout_tracker_mcp\\venv\\Scripts\\python.exe",
+      "args": ["-m", "src.server"],
+      "cwd": "C:\\Users\\john\\projects\\blackout_tracker_mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+---
+
+### Alternative: Using mcp.json (Quick Testing)
+
+If there's an `mcp.json` file in your project directory, Claude Code will automatically detect and offer to use the MCP server when you open the project folder.
+
+This is the fastest way to test during development.
 
 ### Verification
 
@@ -413,7 +452,7 @@ Different markers are used on the schedule:
 Configuration and cache are stored in:
 
 ```
-~/.config/electricity_shutdowns_mcp/
+~/.config/blackout_tracker_mcp/
 ├── config.json          # Address and monitoring settings
 └── schedule_cache.json  # Outage schedules cache
 ```
@@ -426,7 +465,7 @@ Configuration and cache are stored in:
 ## Project Structure
 
 ```
-electricity_shutdowns_mcp/
+blackout_tracker_mcp/
 ├── src/
 │   ├── server.py           # Main MCP server
 │   ├── parser.py           # DTEK website parser
@@ -488,7 +527,7 @@ Enable detailed logging by adding to your configuration:
 ```json
 {
   "mcpServers": {
-    "electricity-shutdowns": {
+    "blackout-tracker": {
       "command": "/path/to/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/path/to/project",

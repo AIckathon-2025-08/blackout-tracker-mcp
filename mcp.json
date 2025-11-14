@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "electricity-shutdowns": {
+    "blackout-tracker": {
       "command": "python",
       "args": ["-m", "src.server"],
       "cwd": "${workspaceFolder}",

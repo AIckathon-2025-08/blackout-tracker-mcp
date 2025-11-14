@@ -71,4 +71,5 @@ Thumbs.db
 .config/
 
 # Test files (will be mounted separately if needed)
+tests/
 test_*.py

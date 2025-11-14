@@ -67,14 +67,14 @@ COPY src/ ./src/
 COPY pyproject.toml .
 
 # Create directory for configuration (will be mounted as volume)
-RUN mkdir -p /root/.config/electricity_shutdowns_mcp
+RUN mkdir -p /root/.config/blackout_tracker_mcp
 
 # Set up proper permissions
 RUN chmod -R 755 /app
 
 # Add a non-root user for running the application (optional but recommended)
 RUN useradd -m -u 1000 mcpuser && \
-    chown -R mcpuser:mcpuser /app /root/.config/electricity_shutdowns_mcp
+    chown -R mcpuser:mcpuser /app /root/.config/blackout_tracker_mcp
 
 # Switch to non-root user
 USER mcpuser

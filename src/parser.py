@@ -8,7 +8,7 @@ from typing import Optional
 from playwright.async_api import async_playwright, Page, Browser, TimeoutError as PlaywrightTimeout
 from bs4 import BeautifulSoup
 
-from .config import OutageSchedule, ScheduleType, OutageType, ScheduleCache
+from config import OutageSchedule, ScheduleType, OutageType, ScheduleCache
 
 
 class DTEKParserError(Exception):

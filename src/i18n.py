@@ -12,14 +12,14 @@ class I18n:
     """Internationalization helper class."""
 
     SUPPORTED_LANGUAGES = ["en", "uk"]
-    DEFAULT_LANGUAGE = "uk"
+    DEFAULT_LANGUAGE = "en"
 
     def __init__(self, language: Optional[str] = None):
         """
         Initialize i18n with specified language.
 
         Args:
-            language: Language code ('en' or 'uk'). Defaults to 'uk'.
+            language: Language code ('en' or 'uk'). Defaults to 'en'.
         """
         self.language = language or self.DEFAULT_LANGUAGE
         if self.language not in self.SUPPORTED_LANGUAGES:
@@ -110,8 +110,11 @@ def get_i18n() -> I18n:
     global _i18n_instance
     if _i18n_instance is None:
         # Import here to avoid circular dependency
-        from .config import config
-        language = config.get_language() if hasattr(config, 'get_language') else 'uk'
+        try:
+            from .config import config
+        except ImportError:
+            from config import config
+        language = config.get_language() if hasattr(config, 'get_language') else 'en'
         _i18n_instance = I18n(language)
     return _i18n_instance
 

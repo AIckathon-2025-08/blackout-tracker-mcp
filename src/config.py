@@ -71,8 +71,8 @@ class Config:
     def __init__(self, config_dir: Optional[Path] = None):
         """Initialize configuration manager."""
         if config_dir is None:
-            # Use ~/.config/electricity_shutdowns_mcp by default
-            config_dir = Path.home() / ".config" / "electricity_shutdowns_mcp"
+            # Use ~/.config/blackout_tracker_mcp by default
+            config_dir = Path.home() / ".config" / "blackout_tracker_mcp"
 
         self.config_dir = config_dir
         self.config_dir.mkdir(parents=True, exist_ok=True)
@@ -89,11 +89,11 @@ class Config:
                 data = json.load(f)
                 self.address = Address(**data.get('address', {})) if data.get('address') else None
                 self.monitoring = MonitoringConfig(**data.get('monitoring', {}))
-                self.language = data.get('language', 'uk')  # Default to Ukrainian
+                self.language = data.get('language', 'en')  # Default to English
         else:
             self.address = None
             self.monitoring = MonitoringConfig()
-            self.language = 'uk'  # Default to Ukrainian
+            self.language = 'en'  # Default to English
 
     def _save_config(self):
         """Save configuration to file."""

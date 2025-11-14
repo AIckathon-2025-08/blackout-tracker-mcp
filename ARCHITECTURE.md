@@ -103,8 +103,8 @@ Configuration management and data storage.
 - Load/save to JSON
 
 **Files:**
-- `~/.config/electricity_shutdowns_mcp/config.json` - configuration
-- `~/.config/electricity_shutdowns_mcp/schedule_cache.json` - schedule cache
+- `~/.config/blackout_tracker_mcp/config.json` - configuration
+- `~/.config/blackout_tracker_mcp/schedule_cache.json` - schedule cache
 
 ### 3. Scheduler (scheduler.py)
 Monitoring and notification logic.

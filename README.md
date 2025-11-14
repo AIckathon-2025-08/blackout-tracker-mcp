@@ -63,6 +63,134 @@ You should see:
 ✓ ALL VALIDATIONS PASSED
 ```
 
+## Docker Setup (Alternative)
+
+If you prefer using Docker, you can run the MCP server in a containerized environment. This is especially useful for:
+- Consistent environment across different machines
+- Isolated dependencies (Python, Playwright, Chromium)
+- Easier deployment and testing
+- No need to install Python or Playwright locally
+
+### Prerequisites
+
+- Docker installed ([Get Docker](https://docs.docker.com/get-docker/))
+- Docker Compose installed (usually comes with Docker Desktop)
+
+### Quick Start with Docker
+
+**1. Build the Docker image:**
+
+```bash
+docker-compose build
+```
+
+**2. Run the MCP server:**
+
+```bash
+docker-compose up mcp-server
+```
+
+**3. Run tests in Docker:**
+
+```bash
+# Run validation tests
+docker-compose run --rm test-runner
+
+# Run parser tests
+docker-compose run --rm parser-test
+```
+
+### Docker Configuration for Claude Desktop
+
+When using Docker, you need to configure Claude Desktop to communicate with the containerized MCP server.
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "electricity-shutdowns": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "electricity-shutdowns-mcp",
+        "python",
+        "-m",
+        "src.server"
+      ]
+    }
+  }
+}
+```
+
+**Important:** The container must be running (`docker-compose up -d mcp-server`) for this configuration to work.
+
+### Docker Commands Reference
+
+```bash
+# Build the image
+docker-compose build
+
+# Start the server in background
+docker-compose up -d mcp-server
+
+# View logs
+docker-compose logs -f mcp-server
+
+# Stop the server
+docker-compose down
+
+# Run tests
+docker-compose run --rm test-runner
+
+# Rebuild after code changes
+docker-compose build --no-cache
+
+# Remove all containers and volumes
+docker-compose down -v
+```
+
+### Persisting Configuration
+
+The Docker setup uses a named volume (`mcp-config`) to persist your configuration and cache:
+
+```bash
+# View volume location
+docker volume inspect electricity_shutdowns_mcp_mcp-config
+
+# Backup configuration
+docker run --rm -v electricity_shutdowns_mcp_mcp-config:/data -v $(pwd):/backup \
+  alpine tar czf /backup/mcp-config-backup.tar.gz -C /data .
+
+# Restore configuration
+docker run --rm -v electricity_shutdowns_mcp_mcp-config:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/mcp-config-backup.tar.gz -C /data
+```
+
+### Troubleshooting Docker
+
+**Container not starting:**
+```bash
+# Check logs
+docker-compose logs mcp-server
+
+# Check if port conflicts exist
+docker ps -a
+
+# Rebuild from scratch
+docker-compose down -v
+docker-compose build --no-cache
+docker-compose up
+```
+
+**Playwright/Chromium issues:**
+```bash
+# The Dockerfile includes all necessary dependencies
+# If you still encounter issues, try rebuilding:
+docker-compose build --no-cache
+```
+
 ## Claude Code Setup
 
 There are two methods to integrate this MCP server with Claude Code/Desktop:
@@ -308,6 +436,9 @@ electricity_shutdowns_mcp/
 ├── test_visible.py         # Parser test (visible browser)
 ├── test_save_html.py       # Parser test (save HTML)
 ├── test_mcp_server.py      # MCP server validation test
+├── Dockerfile              # Docker image configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── .dockerignore           # Docker ignore file
 ├── mcp.json                # MCP configuration for Claude Code
 ├── requirements.txt        # Python dependencies
 ├── pyproject.toml          # Project metadata

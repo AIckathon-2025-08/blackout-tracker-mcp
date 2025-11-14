@@ -1,7 +1,7 @@
 {
   "tool_descriptions": {
     "set_address": "Configures the user's address for checking outage schedules. Address is saved and used for all subsequent requests. Important: city and street must have correct prefixes (м., Просп., Вул., etc.) as they appear in DTEK autocomplete. Can be run this way: 'Set address м. Дніпро, вул. . Вʼячеслава Липинського, буд. 4'.",
-    "check_outage_schedule": "Checks electricity outage schedule for configured address. Returns accurate schedule for today/tomorrow (ACTUAL) and optionally weekly forecast (POSSIBLE_WEEK). Make sure address is configured via set_address first. Can be run this way: 'Check electricity outage schedule for today (with time when we have electricity too)'.",
+    "check_outage_schedule": "Checks electricity outage schedule for configured address. Always fetches both accurate schedule for today/tomorrow (ACTUAL) and weekly forecast (POSSIBLE_WEEK) from DTEK website. Parameter include_possible controls whether to show forecast in output. Make sure address is configured via set_address first. Can be run this way: 'Check electricity outage schedule for today (with time when we have electricity too)'.",
     "get_next_outage": "Finds the next upcoming electricity outage from accurate schedule (ACTUAL). Shows when and for how long the outage is scheduled. Works only with accurate schedule for today/tomorrow.",
     "get_outages_for_day": "Gets all outages for specific day of week. Can retrieve both accurate schedule (ACTUAL) for today/tomorrow and forecast (POSSIBLE_WEEK).",
     "configure_monitoring": "Configures monitoring parameters."
@@ -10,7 +10,7 @@
     "city": "City with prefix, e.g. 'м. Дніпро', 'м. Київ'",
     "street": "Street with prefix, e.g. 'Просп. Миру', 'Вул. Шевченка'",
     "house_number": "House number, e.g. '4', '50а'",
-    "include_possible": "Include weekly forecast (in addition to accurate schedule)",
+    "include_possible": "Show weekly forecast in output (data is always fetched and cached)",
     "force_refresh": "Force refresh data from website (ignore cache)",
     "day_of_week": "Day of week in Ukrainian: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя",
     "schedule_type": "Schedule type: 'actual' - accurate schedule (today/tomorrow), 'possible_week' - weekly forecast"
@@ -20,6 +20,7 @@
     "address_missing": "Error: city, street and house number required.",
     "address_not_configured": "Error: address not configured. First use set_address.",
     "no_schedule_data": "No outage schedule data. First run check_outage_schedule.",
+    "no_possible_schedules_in_cache": "Weekly forecast not available in cache. Please run check_outage_schedule with include_possible=true first.",
     "no_next_outage": "No upcoming outages found in accurate schedule.",
     "no_outages_for_day": "No outages found for day: {day} ({schedule_type})",
     "fetching_schedule": "Fetching schedule for {address}",

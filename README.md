@@ -46,6 +46,12 @@ This MCP server helps track scheduled electricity outages and provides timely no
 - Check electricity outage for specific date:
 ![img.png](screenshots/check_outage_for_today.png)
 
+- Check outage for this week (possible outages):
+![img.png](screenshots/check_outage_for_week.png)
+
+- Check outage for specific day by hours:
+![img.png](screenshots/check_outage_for_day.png)
+
 ### Key Features
 
 - 🔍 **Schedule Checking** - Get outage schedules for your specific address

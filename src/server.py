@@ -171,14 +171,14 @@ async def handle_check_schedule(arguments: dict) -> list[TextContent]:
                     text=format_schedule_response(cached, address, include_possible, from_cache=True)
                 )]
 
-    # Fetch fresh data
+    # Fetch fresh data - ALWAYS fetch both schedules since DTEK website always returns both
     logger.info(f"Fetching schedule for {address.to_string()}")
     try:
         schedule_cache = await fetch_dtek_schedule(
             city=address.city,
             street=address.street,
             house_number=address.house_number,
-            include_possible=include_possible
+            include_possible=True  # Always fetch both schedules
         )
 
         # Save to cache

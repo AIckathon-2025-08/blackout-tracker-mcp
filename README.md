@@ -275,7 +275,7 @@ After connecting the MCP server, you'll see available tools:
 First, configure your address (note: use prefixes as they appear on DTEK website):
 
 ```
-Set my address: м. Дніпро, Просп. Миру, 4
+Set my address: м. Дніпро, вул. Вʼячеслава Липинського, 4
 ```
 
 Claude will call `set_address` with the correct parameters.
@@ -294,15 +294,15 @@ Claude will call `check_outage_schedule` and show you the results.
 #### Basic Usage
 
 ```
-You: Set my address to м. Кривий Ріг, Вешенська, 8
+You: Set my address to м. Дніпро, Вʼячеслава Липинського, 4
 
 Claude: [Calls set_address]
-✓ Address saved: м. Кривий Ріг, Вешенська, буд. 8
+✓ Address saved: м. Дніпро, Вʼячеслава Липинського, 4
 
 You: Check outage schedule
 
 Claude: [Calls check_outage_schedule]
-📍 Address: м. Кривий Ріг, Вешенська, буд. 8
+📍 Address: м. Дніпро, Вʼячеслава Липинського, 4
 ...
 ```
 
@@ -462,7 +462,7 @@ electricity_shutdowns_mcp/
 **Solution:**
 First configure your address using `set_address`:
 ```
-Set address: м. Дніпро, Просп. Миру, 4
+Set address: м. Дніпро, вул. Вʼячеслава Липинського, 4
 ```
 
 ### Parsing Error

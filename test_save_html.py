@@ -19,9 +19,9 @@ async def test_save_html():
 
         print("Filling form...")
         await parser._fill_address_form(
-            city="Кривий Ріг",
-            street="Вешенська",
-            house_number="8"
+            city="Дніпро",
+            street="Вʼячеслава Липинського",
+            house_number="4"
         )
 
         print("Getting HTML...")

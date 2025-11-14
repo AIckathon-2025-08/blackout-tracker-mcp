@@ -89,15 +89,18 @@ class Config:
                 data = json.load(f)
                 self.address = Address(**data.get('address', {})) if data.get('address') else None
                 self.monitoring = MonitoringConfig(**data.get('monitoring', {}))
+                self.language = data.get('language', 'uk')  # Default to Ukrainian
         else:
             self.address = None
             self.monitoring = MonitoringConfig()
+            self.language = 'uk'  # Default to Ukrainian
 
     def _save_config(self):
         """Save configuration to file."""
         data = {
             'address': self.address.model_dump() if self.address else None,
-            'monitoring': self.monitoring.model_dump()
+            'monitoring': self.monitoring.model_dump(),
+            'language': self.language
         }
         with open(self.config_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -143,6 +146,26 @@ class Config:
                 return ScheduleCache(**data)
         except Exception:
             return None
+
+    def set_language(self, language: str):
+        """
+        Set interface language.
+
+        Args:
+            language: Language code ('en' or 'uk')
+        """
+        if language in ['en', 'uk']:
+            self.language = language
+            self._save_config()
+
+    def get_language(self) -> str:
+        """
+        Get current interface language.
+
+        Returns:
+            Language code ('en' or 'uk')
+        """
+        return self.language
 
 
 # Global config instance

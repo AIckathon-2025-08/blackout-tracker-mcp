@@ -1,100 +1,108 @@
 # TODO: Electricity Shutdowns MCP Server
 
-## Фаза 1: Исследование и подготовка ✅ ГОТОВО
-- [x] Исследовать сайт ДТЭК (https://www.dtek-dnem.com.ua/ua/shutdowns)
-  - [x] Изучить структуру формы (кастомный autocomplete с ID: cityautocomplete-list, streetautocomplete-list, house_numautocomplete-list)
-  - [x] Понять как формируется запрос (заполнение формы через Playwright)
-  - [x] Исследовать структуру таблицы с графиком (div.discon-fact-table и div.discon-schedule-table)
-  - [x] Проверить возможность использования API (API нет, только веб-скрапинг)
-- [x] Определить зависимости и библиотеки (Playwright, BeautifulSoup, MCP SDK)
-- [x] Создать структуру проекта
+## Phase 1: Research and Preparation ✅ COMPLETED
+- [x] Research DTEK website (https://www.dtek-dnem.com.ua/ua/shutdowns)
+  - [x] Study form structure (custom autocomplete with IDs: cityautocomplete-list, streetautocomplete-list, house_numautocomplete-list)
+  - [x] Understand request formation (form filling via Playwright)
+  - [x] Research schedule table structure (div.discon-fact-table and div.discon-schedule-table)
+  - [x] Check API availability (no API available, web scraping only)
+- [x] Determine dependencies and libraries (Playwright, BeautifulSoup, MCP SDK)
+- [x] Create project structure
 
-## Фаза 2: Настройка окружения ✅ ГОТОВО
-- [x] Создать pyproject.toml / requirements.txt
-- [x] Настроить виртуальное окружение Python
-- [x] Установить MCP SDK (`mcp`)
-- [x] Установить библиотеки для парсинга (playwright, beautifulsoup4, lxml)
-- [x] Создать базовую структуру файлов (src/parser.py, src/config.py)
+## Phase 2: Environment Setup ✅ COMPLETED
+- [x] Create pyproject.toml / requirements.txt
+- [x] Set up Python virtual environment
+- [x] Install MCP SDK (`mcp`)
+- [x] Install parsing libraries (playwright, beautifulsoup4, lxml)
+- [x] Create basic file structure (src/parser.py, src/config.py)
 
-## Фаза 3: Парсер сайта ДТЭК ✅ ГОТОВО
-- [x] Реализовать функцию заполнения формы (населенный пункт, улица, номер дома)
-  - [x] Закрытие модального окна с предупреждением
-  - [x] Заполнение поля города с выбором из autocomplete
-  - [x] Заполнение поля улицы с выбором из autocomplete
-  - [x] Заполнение номера дома с выбором из autocomplete
-  - [x] Ожидание активации следующего поля после выбора
-- [x] Реализовать парсинг таблицы "Графік відключень:" (точный график на сегодня/завтра)
-  - [x] Парсинг даты и дня недели из div.dates
-  - [x] Парсинг временных интервалов (часы) из thead
-  - [x] Определение типа отключения по CSS классам (cell-scheduled, cell-first-half, cell-second-half)
-- [x] Реализовать парсинг таблицы "Графік можливих відключень на тиждень:" (прогноз)
-  - [x] Парсинг дней недели из первой колонки tbody
-  - [x] Парсинг временных интервалов из thead
-  - [x] Определение типа возможного отключения (cell-scheduled-maybe)
-- [x] Структурировать данные (ScheduleType.ACTUAL vs POSSIBLE_WEEK)
-- [x] Добавить обработку ошибок (try-catch блоки, fallback логика)
-- [x] Тестирование парсера (протестировано на реальных адресах: Дніпро и Кривий Ріг)
+## Phase 3: DTEK Website Parser ✅ COMPLETED
+- [x] Implement form filling function (city, street, house number)
+  - [x] Close warning modal window
+  - [x] Fill city field with autocomplete selection
+  - [x] Fill street field with autocomplete selection
+  - [x] Fill house number with autocomplete selection
+  - [x] Wait for next field activation after selection
+- [x] Implement parsing of "Графік відключень:" table (accurate schedule for today/tomorrow)
+  - [x] Parse date and day of week from div.dates
+  - [x] Parse time intervals (hours) from thead
+  - [x] Determine outage type by CSS classes (cell-scheduled, cell-first-half, cell-second-half)
+- [x] Implement parsing of "Графік можливих відключень на тиждень:" table (forecast)
+  - [x] Parse days of week from first tbody column
+  - [x] Parse time intervals from thead
+  - [x] Determine possible outage type (cell-scheduled-maybe)
+- [x] Structure data (ScheduleType.ACTUAL vs POSSIBLE_WEEK)
+- [x] Add error handling (try-catch blocks, fallback logic)
+- [x] Parser testing (tested on real addresses: Dnipro and Kryvyi Rih)
 
-## Фаза 4: Основной MCP-сервер ✅ ГОТОВО
-- [x] Реализовать конфигурацию (config.py с Address, MonitoringConfig, OutageSchedule, ScheduleCache)
-- [x] Добавить хранение данных (кеш обоих типов графиков в JSON)
-- [x] Инициализировать MCP-сервер (server.py)
-- [x] Реализовать tool: `check_outage_schedule` (проверка точного графика + опционально прогноз)
-- [x] Реализовать tool: `get_next_outage` (следующее отключение из точного графика)
-- [x] Реализовать tool: `get_outages_for_day` (отключения для конкретного дня)
-- [x] Реализовать tool: `set_address` (настройка адреса пользователя)
-- [x] Создать конфигурационные файлы (mcp.json, CLAUDE_CODE_SETUP.md)
-- [x] Добавить валидационный тест (test_mcp_server.py)
-- [ ] Реализовать tool: `configure_monitoring` (настройка мониторинга - опционально на потом)
+## Phase 4: Main MCP Server ✅ COMPLETED
+- [x] Implement configuration (config.py with Address, MonitoringConfig, OutageSchedule, ScheduleCache)
+- [x] Add data storage (cache for both schedule types in JSON)
+- [x] Initialize MCP server (server.py)
+- [x] Implement tool: `check_outage_schedule` (check accurate schedule + optionally forecast)
+- [x] Implement tool: `get_next_outage` (next outage from accurate schedule)
+- [x] Implement tool: `get_outages_for_day` (outages for specific day)
+- [x] Implement tool: `set_address` (configure user address)
+- [x] Create configuration files (mcp.json, CLAUDE_CODE_SETUP.md)
+- [x] Add validation test (test_mcp_server.py)
+- [ ] Implement tool: `configure_monitoring` (monitoring configuration - optional for later)
 
-## Фаза 5: Логика мониторинга и уведомлений
-- [ ] Реализовать периодическую проверку точного графика (ACTUAL)
-- [ ] Детект изменений точного графика (сравнение с предыдущей версией)
-- [ ] Логика уведомлений за N минут до отключения (только для точного графика)
-- [ ] Форматирование уведомлений с указанием типа отключения
+## Phase 5: Monitoring and Notification Logic
+- [ ] Implement periodic checking of accurate schedule (ACTUAL)
+- [ ] Detect accurate schedule changes (comparison with previous version)
+- [ ] Notification logic N minutes before outage (for accurate schedule only)
+- [ ] Format notifications with outage type indication
 
-## Фаза 6: Интеграция с Claude Code 🔄 В РАБОТЕ (СЛЕДУЮЩИЙ ПРИОРИТЕТ!)
-- [x] Создать конфигурационный файл для Claude Code (mcp.json)
-- [x] Создать подробную документацию по настройке (CLAUDE_CODE_SETUP.md)
-- [ ] **Протестировать запуск через Claude Code**
-- [ ] **Проверить работу всех tools в Claude Code**
-- [ ] Отладка и фиксы при необходимости
+## Phase 6: Claude Code Integration 🔄 IN PROGRESS (NEXT PRIORITY!)
+- [x] Create configuration file for Claude Code (mcp.json)
+- [x] Create detailed setup documentation (CLAUDE_CODE_SETUP.md)
+- [ ] **Test launch via Claude Code**
+- [ ] **Test all tools in Claude Code**
+- [ ] Debug and fixes as needed
 
-## Фаза 7: Dockerization of repository ✅ ГОТОВО
-- [x] Создать Dockerfile для контейнеризации MCP-сервера
-- [x] Настроить docker-compose для локальной разработки и тестирования
-- [x] Создать .dockerignore для оптимизации образа
-- [x] Обновить документацию с инструкциями по запуску через Docker
-- [x] Тестирование Docker образа (валидационные тесты прошли успешно)
-- [x] Добавить Docker конфигурацию для Claude Desktop
-- [x] Создать profiles для разных сценариев тестирования
+## Phase 7: Repository Dockerization ✅ COMPLETED
+- [x] Create Dockerfile for MCP server containerization
+- [x] Configure docker-compose for local development and testing
+- [x] Create .dockerignore for image optimization
+- [x] Update documentation with Docker launch instructions
+- [x] Test Docker image (validation tests passed successfully)
+- [x] Add Docker configuration for Claude Desktop
+- [x] Create profiles for different testing scenarios
 
-## Фаза 8: Internationalization (i18n)
-- [ ] Добавить поддержку английского языка. У нас будет поддерживаться 2 языка: украинский и английский.
-- [ ] Локализация сообщений и уведомлений
-- [ ] Тестирование на разных языках
-- [ ] Добавить возможность выбора языка в конфигурации / или автоопределение
-- [ ] Перевести README и документацию на английский
-- [ ] в mcp help выводить все возможные опции запросов на обоих языках
+## Phase 8: Internationalization (i18n) ✅ PARTIALLY COMPLETED
+- [x] Add English language support. Will support 2 languages: Ukrainian and English
+- [x] Create translation files (en.json, uk.json)
+- [x] Create i18n module (i18n.py) with translation helper functions
+- [x] Add language selection support in configuration (config.py)
+- [x] Translate README and documentation to English
+- [x] Translate TODO.md to English
+- [x] Translate ARCHITECTURE.md to English
+- [x] Add i18n import and basic structure to server.py
+- [ ] Full server.py message localization (can be done in separate commit)
+- [ ] Testing in different languages
+- [ ] Auto-detection of language
+- [ ] Display all request options in both languages in MCP help
 
-## Фаза 9: Дополнительные фичи
-- [ ] Расчет оптимального времени зарядки (tool: `calculate_charging_time`)
-- [ ] Настраиваемые интервалы проверки
-- [ ] Поддержка нескольких адресов
-- [ ] История изменений графика
+## Phase 9: Additional Features
+- [ ] Calculate optimal charging time (tool: `calculate_charging_time`)
+- [ ] Configurable check intervals
+- [ ] Multiple addresses support
+- [ ] Schedule change history
 
-## Документация ✅ ГОТОВО
-- [x] README.md с полной инструкцией по установке и настройке (на английском)
-- [x] ARCHITECTURE.md с описанием структуры проекта
-- [x] Описание типов графиков и отключений
-- [x] Примеры использования всех tools
-- [x] Подробная Troubleshooting секция
-- [x] Claude Code setup инструкции (два метода)
-- [x] Объединение CLAUDE_CODE_SETUP.md в README.md
+## Documentation ✅ COMPLETED
+- [x] README.md with complete installation and setup instructions (in English)
+- [x] ARCHITECTURE.md with project structure description
+- [x] Description of schedule types and outages
+- [x] Usage examples for all tools
+- [x] Detailed Troubleshooting section
+- [x] Claude Code setup instructions (two methods)
+- [x] Merge CLAUDE_CODE_SETUP.md into README.md
+- [x] Docker setup documentation
 
-## Тестирование ✅ ЧАСТИЧНО ГОТОВО
-- [x] Ручные тесты для парсера (test_fill_form.py, test_visible.py, test_save_html.py)
-- [x] Тестирование на реальных адресах (Дніпро, Кривий Ріг)
-- [ ] Unit тесты для парсера (pytest)
-- [ ] Тесты для MCP tools
-- [ ] End-to-end тестирование
+## Testing ✅ PARTIALLY COMPLETED
+- [x] Manual parser tests (test_fill_form.py, test_visible.py, test_save_html.py)
+- [x] Testing on real addresses (Dnipro, Kryvyi Rih)
+- [x] MCP server validation test (test_mcp_server.py)
+- [ ] Unit tests for parser (pytest)
+- [ ] Tests for MCP tools
+- [ ] End-to-end testing

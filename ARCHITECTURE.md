@@ -1,69 +1,69 @@
-# Архітектура MCP Server для відключень електроенергії
+# Architecture of Electricity Shutdowns MCP Server
 
-## Огляд системи
+## System Overview
 
-MCP-сервер для моніторингу графіків відключень електроенергії від ДТЕК Дніпровські електромережі.
+MCP server for monitoring electricity outage schedules from DTEK Dnipro Electric Networks.
 
-## Структура даних
+## Data Structure
 
-### Два типи графіків
+### Two Types of Schedules
 
-Система працює з двома типами графіків з сайту ДТЭК:
+The system works with two types of schedules from the DTEK website:
 
-#### 1. Точний графік (ACTUAL Schedule)
-**Джерело:** Таблиця "Графік відключень:"
+#### 1. Accurate Schedule (ACTUAL Schedule)
+**Source:** Table "Графік відключень:"
 
-**Характеристики:**
-- Точні відключення на сьогодні та завтра
-- Дані на завтра з'являються ближче до кінця дня
-- Використовується для сповіщень
-- Приоритетний при запитах "на сьогодні"
+**Characteristics:**
+- Accurate outages for today and tomorrow
+- Tomorrow's data appears closer to end of day
+- Used for notifications
+- Priority source for "today" requests
 
-**Структура таблиці:**
+**Table Structure:**
 ```
-Дата: "на сьогодні 14.11.25" / "на завтра 15.11.25"
-Часові проміжки: 00-01, 01-02, ..., 23-24
-Символи:
-  ✗ (чорний) - точне відключення
-  ⚡ (жовтий) - відключення перші 30 хв
-  ⚡ (зі зірочкою) - можливе відключення другі 30 хв
-```
-
-#### 2. Прогноз на тиждень (POSSIBLE_WEEK Schedule)
-**Джерело:** Таблиця "Графік можливих відключень на тиждень:"
-
-**Характеристики:**
-- Прогноз на всі дні тижня
-- Менш точний
-- Використовується для загального планування
-- Показується тільки при запиті конкретного дня тижня
-
-**Структура таблиці:**
-```
-Дні тижня: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя
-Часові проміжки: 00-01, 01-02, ..., 23-24
-Символи:
-  ✗ - можливе відключення
-  ⚡ - можливе відключення (різні типи)
-  Сірий фон - ймовірне відключення
+Date: "на сьогодні 14.11.25" / "на завтра 15.11.25"
+Time intervals: 00-01, 01-02, ..., 23-24
+Symbols:
+  ✗ (black) - definite outage
+  ⚡ (yellow) - outage first 30 min
+  ⚡ (with asterisk) - possible outage second 30 min
 ```
 
-## Моделі даних
+#### 2. Weekly Forecast (POSSIBLE_WEEK Schedule)
+**Source:** Table "Графік можливих відключень на тиждень:"
+
+**Characteristics:**
+- Forecast for all days of the week
+- Less accurate
+- Used for general planning
+- Shown only when requesting specific day of week
+
+**Table Structure:**
+```
+Days of week: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя
+Time intervals: 00-01, 01-02, ..., 23-24
+Symbols:
+  ✗ - possible outage
+  ⚡ - possible outage (various types)
+  Gray background - probable outage
+```
+
+## Data Models
 
 ### Address
 ```python
 class Address:
     city: str              # "м. Дніпро"
-    street: str            # "Вʼячеслава Липинського" (з префіксом з автокомпліту)
+    street: str            # "Вʼячеслава Липинського" (with prefix from autocomplete)
     house_number: str      # "4"
 ```
 
 ### OutageSchedule
 ```python
 class OutageSchedule:
-    schedule_type: str     # "actual" або "possible_week"
+    schedule_type: str     # "actual" or "possible_week"
     day_of_week: str       # "Понеділок", "Вівторок", ...
-    date: Optional[str]    # "14.11.25" (тільки для actual)
+    date: Optional[str]    # "14.11.25" (only for actual)
     start_hour: int        # 0-23
     end_hour: int          # 1-24
     outage_type: str       # "definite", "first_30min", "second_30min", "possible"
@@ -73,80 +73,90 @@ class OutageSchedule:
 ### ScheduleCache
 ```python
 class ScheduleCache:
-    actual_schedules: list[OutageSchedule]    # Точний графік
-    possible_schedules: list[OutageSchedule]  # Прогноз на тиждень
+    actual_schedules: list[OutageSchedule]    # Accurate schedule
+    possible_schedules: list[OutageSchedule]  # Weekly forecast
     last_updated: datetime
 ```
 
-## Компоненти системи
+## System Components
 
 ### 1. Parser (parser.py)
-Відповідає за парсинг сайту ДТЭК.
+Responsible for parsing the DTEK website.
 
-**Основні функції:**
-- `fill_form(city, street, house_number)` - заповнення форми адреси
-- `parse_actual_schedule()` - парсинг таблиці "Графік відключень:"
-- `parse_possible_schedule()` - парсинг таблиці "Графік можливих відключень на тиждень:"
-- `detect_outage_type(cell)` - визначення типу відключення по іконці/кольору
+**Main Functions:**
+- `fill_form(city, street, house_number)` - fill address form
+- `parse_actual_schedule()` - parse "Графік відключень:" table
+- `parse_possible_schedule()` - parse "Графік можливих відключень на тиждень:" table
+- `detect_outage_type(cell)` - determine outage type by icon/color
 
-**Технології:**
-- Playwright для рендерингу JS-сторінки
-- BeautifulSoup для парсингу HTML
+**Technologies:**
+- Playwright for JS page rendering
+- BeautifulSoup for HTML parsing
 
 ### 2. Config (config.py)
-Управління конфігурацією та збереженням даних.
+Configuration management and data storage.
 
-**Відповідальності:**
-- Збереження адреси користувача
-- Налаштування моніторингу
-- Кешування графіків (обидва типи окремо)
-- Завантаження/збереження в JSON
+**Responsibilities:**
+- Store user address
+- Monitor configuration
+- Cache schedules (both types separately)
+- Load/save to JSON
 
-**Файли:**
-- `~/.config/electricity_shutdowns_mcp/config.json` - конфігурація
-- `~/.config/electricity_shutdowns_mcp/schedule_cache.json` - кеш графіків
+**Files:**
+- `~/.config/electricity_shutdowns_mcp/config.json` - configuration
+- `~/.config/electricity_shutdowns_mcp/schedule_cache.json` - schedule cache
 
 ### 3. Scheduler (scheduler.py)
-Логіка моніторингу та сповіщень.
+Monitoring and notification logic.
 
-**Відповідальності:**
-- Періодична перевірка точного графіка
-- Порівняння з попередньою версією (детект змін)
-- Розрахунок часу до наступного відключення
-- Генерація сповіщень за N хвилин
+**Responsibilities:**
+- Periodic checking of accurate schedule
+- Comparison with previous version (change detection)
+- Calculate time until next outage
+- Generate notifications N minutes before
 
-**ВАЖЛИВО:** Сповіщення працюють тільки з точним графіком (ACTUAL), не з прогнозом!
+**IMPORTANT:** Notifications work only with accurate schedule (ACTUAL), not with forecast!
 
 ### 4. Server (server.py)
-Основний MCP-сервер.
+Main MCP server.
 
 **MCP Tools:**
 
-#### `check_outage_schedule`
+#### `set_address`
 ```python
 Parameters:
   city: str
   street: str
   house_number: str
+
+Returns:
+  - success: bool
+  - message: str
+```
+
+#### `check_outage_schedule`
+```python
+Parameters:
   include_possible: bool = False
+  force_refresh: bool = False
 
 Returns:
   - actual_schedules: list[OutageSchedule]
-  - possible_schedules: list[OutageSchedule] (якщо include_possible=True)
+  - possible_schedules: list[OutageSchedule] (if include_possible=True)
 ```
 
 #### `get_next_outage`
 ```python
 Returns:
-  - next_outage: OutageSchedule (з точного графіка)
-  - time_until: str (скільки часу до відключення)
+  - next_outage: OutageSchedule (from accurate schedule)
+  - time_until: str (time until outage)
 ```
 
 #### `get_outages_for_day`
 ```python
 Parameters:
   day_of_week: str (Понеділок, Вівторок, ...)
-  use_actual: bool = True
+  schedule_type: str = "actual"
 
 Returns:
   - outages: list[OutageSchedule]
@@ -164,9 +174,9 @@ Returns:
   - config: MonitoringConfig
 ```
 
-## Потік даних
+## Data Flow
 
-### 1. Перевірка графіка
+### 1. Check Schedule
 ```
 User Request → MCP Tool → Parser → DTEK Website
                 ↓
@@ -179,9 +189,9 @@ User Request → MCP Tool → Parser → DTEK Website
          Return to User
 ```
 
-### 2. Моніторинг та сповіщення
+### 2. Monitoring and Notifications
 ```
-Scheduler (кожні N хвилин)
+Scheduler (every N minutes)
     ↓
 Fetch ACTUAL schedule from Parser
     ↓
@@ -194,58 +204,85 @@ Check time until next outage
 If < notification_time → Alert user
 ```
 
-## Приклад використання
+## Usage Examples
 
-### Налаштування адреси
+### Configure Address
 ```
-Claude: Встанови адресу: м. Дніпро, вул. Вʼячеслава Липинського, буд. 4
-→ Викликає configure_address() → зберігає в config
-```
-
-### Перевірка на сьогодні
-```
-User: Коли сьогодні відключать світло?
-Claude: Викликає get_next_outage()
-→ Повертає найближче відключення з ACTUAL графіка
+Claude: Set address: м. Дніпро, вул. Вʼячеслава Липинського, буд. 4
+→ Calls set_address() → saves to config
 ```
 
-### Прогноз на тиждень
+### Check for Today
 ```
-User: Які можливі відключення у середу?
-Claude: Викликає get_outages_for_day(day_of_week="Середа", use_actual=False)
-→ Повертає дані з POSSIBLE_WEEK графіка
+User: When will power be out today?
+Claude: Calls get_next_outage()
+→ Returns nearest outage from ACTUAL schedule
 ```
 
-## Безпека та обробка помилок
+### Weekly Forecast
+```
+User: What are possible outages on Wednesday?
+Claude: Calls get_outages_for_day(day_of_week="Середа", schedule_type="possible_week")
+→ Returns data from POSSIBLE_WEEK schedule
+```
 
-### Можливі помилки:
-1. Сайт ДТЭК недоступний
-2. Змінилась структура HTML
-3. Адреса не знайдена в базі ДТЭК
-4. Playwright не може запуститись
+## Security and Error Handling
 
-### Обробка:
-- Fallback на кешовані дані
-- Повідомлення користувача про проблему
-- Логування помилок
+### Possible Errors:
+1. DTEK website unavailable
+2. HTML structure changed
+3. Address not found in DTEK database
+4. Playwright cannot start
+
+### Handling:
+- Fallback to cached data
+- Notify user about problem
+- Error logging
 - Graceful degradation
 
-## Майбутні покращення
+## Future Improvements
 
-1. **Розрахунок часу зарядки**
-   - Визначення часу до відключення
-   - Розрахунок коли почати заряджати (щоб досягти 100%)
+1. **Charging Time Calculation**
+   - Determine time until outage
+   - Calculate when to start charging (to reach 100%)
 
-2. **Підтримка інших енергокомпаній**
-   - ДТЕК Київські електромережі
-   - ДТЕК Одеські електромережі
-   - Інші оператори
+2. **Support for Other Energy Companies**
+   - DTEK Kyiv Electric Networks
+   - DTEK Odesa Electric Networks
+   - Other operators
 
-3. **Історія змін графіка**
-   - Збереження всіх версій графіка
-   - Аналіз частоти змін
-   - Прогнозування змін
+3. **Schedule Change History**
+   - Save all schedule versions
+   - Analyze change frequency
+   - Predict changes
 
-4. **Інтеграція з календарем**
-   - Експорт у Google Calendar
-   - iCal формат
+4. **Calendar Integration**
+   - Export to Google Calendar
+   - iCal format
+
+## Technology Stack
+
+- **Python 3.10+** - Main language
+- **Playwright** - Browser automation and JS rendering
+- **BeautifulSoup4** - HTML parsing
+- **MCP SDK** - Model Context Protocol implementation
+- **Pydantic** - Data validation and models
+- **Docker** - Containerization
+- **pytest** - Testing (planned)
+
+## Performance Considerations
+
+### Caching Strategy
+- Cache lifetime: 1 hour
+- Separate caches for ACTUAL and POSSIBLE_WEEK
+- Force refresh option available
+
+### Rate Limiting
+- Avoid excessive requests to DTEK website
+- Use cached data when possible
+- Implement exponential backoff on errors
+
+### Resource Management
+- Playwright browser cleanup
+- Connection pooling
+- Memory-efficient data structures

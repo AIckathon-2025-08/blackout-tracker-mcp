@@ -1,0 +1,71 @@
+{
+  "tool_descriptions": {
+    "set_address": "Configures the user's address for checking outage schedules. Address is saved and used for all subsequent requests. Important: city and street must have correct prefixes (м., Просп., Вул., etc.) as they appear in DTEK autocomplete.",
+    "check_outage_schedule": "Checks electricity outage schedule for configured address. Returns accurate schedule for today/tomorrow (ACTUAL) and optionally weekly forecast (POSSIBLE_WEEK). Make sure address is configured via set_address first.",
+    "get_next_outage": "Finds the next upcoming electricity outage from accurate schedule (ACTUAL). Shows when and for how long the outage is scheduled. Works only with accurate schedule for today/tomorrow.",
+    "get_outages_for_day": "Gets all outages for specific day of week. Can retrieve both accurate schedule (ACTUAL) for today/tomorrow and forecast (POSSIBLE_WEEK).",
+    "configure_monitoring": "Configures monitoring parameters."
+  },
+  "tool_params": {
+    "city": "City with prefix, e.g. 'м. Дніпро', 'м. Київ'",
+    "street": "Street with prefix, e.g. 'Просп. Миру', 'Вул. Шевченка'",
+    "house_number": "House number, e.g. '4', '50а'",
+    "include_possible": "Include weekly forecast (in addition to accurate schedule)",
+    "force_refresh": "Force refresh data from website (ignore cache)",
+    "day_of_week": "Day of week in Ukrainian: Понеділок, Вівторок, Середа, Четвер, П'ятниця, Субота, Неділя",
+    "schedule_type": "Schedule type: 'actual' - accurate schedule (today/tomorrow), 'possible_week' - weekly forecast"
+  },
+  "messages": {
+    "address_saved": "✓ Address saved: {address}\n\nYou can now use check_outage_schedule to check outage schedules.",
+    "address_missing": "Error: city, street and house number required.",
+    "address_not_configured": "Error: address not configured. First use set_address.",
+    "no_schedule_data": "No outage schedule data. First run check_outage_schedule.",
+    "no_next_outage": "No upcoming outages found in accurate schedule.",
+    "no_outages_for_day": "No outages found for day: {day} ({schedule_type})",
+    "fetching_schedule": "Fetching schedule for {address}",
+    "error_fetching": "Error fetching schedule: {error}\n\nMake sure address is correct and exists on DTEK website.",
+    "outage_types": {
+      "definite": "Definite outage ✗",
+      "first_30min": "No power first 30 min ⚡",
+      "second_30min": "Possible no power second 30 min ⚡",
+      "possible": "Possible outage"
+    }
+  },
+  "schedule": {
+    "address_label": "📍 Address:",
+    "source_label": "🔄 Source:",
+    "source_cache": "Cache",
+    "source_fresh": "Fresh from website",
+    "updated_label": "⏰ Updated:",
+    "actual_title": "ACCURATE SCHEDULE (today/tomorrow)",
+    "possible_title": "WEEKLY FORECAST (possible outages)",
+    "total_outages": "Total outages:",
+    "date_label": "📅",
+    "definite_label": "✗ Definite:",
+    "first_30_label": "⚡ First 30min:",
+    "second_30_label": "⚡* Second 30min:",
+    "no_actual": "No accurate outages found.",
+    "no_possible": "No forecast found.",
+    "next_outage_title": "⏰ Next outage:",
+    "type_label": "Type:",
+    "data_updated": "Data updated:",
+    "day_label": "📅 Day:",
+    "schedule_type_label": "📊 Type:",
+    "schedule_type_actual": "Accurate schedule",
+    "schedule_type_possible": "Possible outages forecast",
+    "outages_count": "Outages ({count}):",
+    "hours_label": "hours",
+    "hint_title": "💡 Hint:",
+    "hint_next_outage": "Use get_next_outage to quickly find next outage",
+    "hint_outages_for_day": "Use get_outages_for_day for detailed schedule for specific day"
+  },
+  "days_of_week": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  }
+}

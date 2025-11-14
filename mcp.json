@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "electricity-shutdowns": {
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "cwd": "${workspaceFolder}",
+      "env": {}
+    }
+  }
+}

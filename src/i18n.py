@@ -110,7 +110,7 @@ def get_i18n() -> I18n:
     global _i18n_instance
     if _i18n_instance is None:
         # Import here to avoid circular dependency
-        from config import config
+        from .config import config
         language = config.get_language() if hasattr(config, 'get_language') else 'uk'
         _i18n_instance = I18n(language)
     return _i18n_instance

@@ -12,9 +12,9 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent
 from mcp.server.stdio import stdio_server
 
-from config import config, ScheduleType
-from parser import fetch_dtek_schedule
-from i18n import get_i18n
+from .config import config, ScheduleType
+from .parser import fetch_dtek_schedule
+from .i18n import get_i18n
 
 
 # Configure logging

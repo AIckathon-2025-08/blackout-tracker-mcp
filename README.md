@@ -1,6 +1,35 @@
 # Electricity Shutdowns MCP Server
 
-An MCP server for monitoring electricity outage schedules in Ukraine (DTEK Dnipro Electric Networks). Currently supports Dnipropetrovsk region only.
+An MCP server for monitoring electricity outage schedules in Ukraine (DTEK Dnipro Electric Networks). Currently, supports Dnipropetrovsk region only.
+
+## Table of Contents
+
+- [Description](#description)
+- [Claude Code Setup](#claude-code-setup)
+  - [Option A: Using Docker (Recommended)](#option-a-using-docker-recommended-for-daily-use)
+  - [Option B: Using Local Python Environment](#option-b-using-local-python-environment-for-development)
+  - [Alternative: Using mcp.json](#alternative-using-mcpjson-quick-testing)
+- [Installation (For development)](#installation-for-development)
+- [Docker Setup (Alternative)](#docker-setup-alternative)
+- [Usage](#usage)
+  - [Basic Workflow](#basic-workflow)
+  - [Usage Examples](#usage-examples)
+- [Available Tools](#available-tools)
+  - [set_address](#set_address)
+  - [check_outage_schedule](#check_outage_schedule)
+  - [get_next_outage](#get_next_outage)
+  - [get_outages_for_day](#get_outages_for_day)
+- [Data Source](#data-source)
+  - [Schedule Types](#schedule-types)
+  - [Outage Types](#outage-types)
+- [Configuration & Data Storage](#configuration--data-storage)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Roadmap](#roadmap)
+- [Resources](#resources)
+- [Authors](#authors)
+- [Support](#support)
 
 ## Description
 
@@ -15,15 +44,154 @@ This MCP server helps track scheduled electricity outages and provides timely no
 - 🌐 **Real-time Parsing** - Live data from DTEK website
 - 💾 **Smart Caching** - 1-hour cache to reduce server load
 
+## Claude Code Setup
+
+Choose one of the following approaches based on your needs:
+
+### Option A: Using Docker (Recommended for Daily Use)
+
+**Best for:** Production/home use, no need to manage Python dependencies
+
+**Prerequisites:**
+- Docker and docker-compose installed
+- Container must be running: `docker-compose up -d mcp-server`
+
+**Configuration:**
+
+Open your Claude configuration file (`code ~/.claude.json`) and add:
+
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "blackout-tracker-mcp",
+        "python",
+        "-m",
+        "src.server"
+      ]
+    }
+  }
+}
+```
+
+**That's it!** No absolute paths needed. Docker handles everything.
+
+**Step-by-step for beginners:**
+1. Start the container: `docker-compose up -d mcp-server`
+2. Edit config: `code ~/.claude.json`
+3. Paste the JSON above
+4. Restart Claude Code/Desktop
+
+---
+
+You can go to #Usage section to see how to use the MCP server.
+
+### Option B: Using Local Python Environment (For Development)
+
+**Best for:** Development, testing, debugging
+
+**Prerequisites:**
+- Python 3.11+ installed
+- Virtual environment created and activated
+
+**Configuration:**
+
+Open your Claude configuration file (`code ~/.claude.json`) and add:
+
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "/ABSOLUTE/PATH/TO/PROJECT/venv/bin/python",
+      "args": [
+        "-m",
+        "src.server"
+      ],
+      "cwd": "/ABSOLUTE/PATH/TO/PROJECT",
+      "env": {}
+    }
+  }
+}
+```
+
+**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project (`blackout_tracker_mcp`).
+
+**How to find your absolute path:**
+```bash
+cd blackout_tracker_mcp
+pwd  # This shows your absolute path
+```
+
+**Example for macOS:**
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "/Users/john/projects/blackout_tracker_mcp/venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/Users/john/projects/blackout_tracker_mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+**Example for Linux:**
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "/home/john/projects/blackout_tracker_mcp/venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/home/john/projects/blackout_tracker_mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+**Example for Windows:**
+```json
+{
+  "mcpServers": {
+    "blackout-tracker": {
+      "command": "C:\\Users\\john\\projects\\blackout_tracker_mcp\\venv\\Scripts\\python.exe",
+      "args": ["-m", "src.server"],
+      "cwd": "C:\\Users\\john\\projects\\blackout_tracker_mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+---
+
+### Alternative: Using mcp.json (Quick Testing)
+
+If there's an `mcp.json` file in your project directory, Claude Code will automatically detect and offer to use the MCP server when you open the project folder.
+
+This is the fastest way to test during development.
+
+### Verification
+
+After connecting the MCP server, you'll see available tools:
+- `set_address` - Configure your address
+- `check_outage_schedule` - Check outage schedules
+- `get_next_outage` - Find the next upcoming outage
+- `get_outages_for_day` - Get all outages for a specific day
+
+## Installation (For development)
+
 ## Requirements
 
 - Python 3.10 or higher
 - Claude Desktop or Claude Code
 - Internet connection to access DTEK website
 - Chromium browser (installed automatically via Playwright)
-
-## Installation
-
 ### 1. Clone the Repository
 
 ```bash
@@ -166,144 +334,6 @@ docker-compose up
 # If you still encounter issues, try rebuilding:
 docker-compose build --no-cache
 ```
-
-## Claude Code Setup
-
-Choose one of the following approaches based on your needs:
-
-### Option A: Using Docker (Recommended for Daily Use)
-
-**Best for:** Production use, no need to manage Python dependencies
-
-**Prerequisites:**
-- Docker and docker-compose installed
-- Container must be running: `docker-compose up -d mcp-server`
-
-**Configuration:**
-
-Open your Claude configuration file (`code ~/.claude.json`) and add:
-
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "docker",
-      "args": [
-        "exec",
-        "-i",
-        "blackout-tracker-mcp",
-        "python",
-        "-m",
-        "src.server"
-      ]
-    }
-  }
-}
-```
-
-**That's it!** No absolute paths needed. Docker handles everything.
-
-**Step-by-step for beginners:**
-1. Start the container: `docker-compose up -d mcp-server`
-2. Edit config: `code ~/.claude.json`
-3. Paste the JSON above
-4. Restart Claude Code/Desktop
-
----
-
-### Option B: Using Local Python Environment (For Development)
-
-**Best for:** Development, testing, debugging
-
-**Prerequisites:**
-- Python 3.11+ installed
-- Virtual environment created and activated
-
-**Configuration:**
-
-Open your Claude configuration file (`code ~/.claude.json`) and add:
-
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "/ABSOLUTE/PATH/TO/PROJECT/venv/bin/python",
-      "args": [
-        "-m",
-        "src.server"
-      ],
-      "cwd": "/ABSOLUTE/PATH/TO/PROJECT",
-      "env": {}
-    }
-  }
-}
-```
-
-**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT/` with the actual path to your project (`blackout_tracker_mcp`).
-
-**How to find your absolute path:**
-```bash
-cd blackout_tracker_mcp
-pwd  # This shows your absolute path
-```
-
-**Example for macOS:**
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "/Users/john/projects/blackout_tracker_mcp/venv/bin/python",
-      "args": ["-m", "src.server"],
-      "cwd": "/Users/john/projects/blackout_tracker_mcp",
-      "env": {}
-    }
-  }
-}
-```
-
-**Example for Linux:**
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "/home/john/projects/blackout_tracker_mcp/venv/bin/python",
-      "args": ["-m", "src.server"],
-      "cwd": "/home/john/projects/blackout_tracker_mcp",
-      "env": {}
-    }
-  }
-}
-```
-
-**Example for Windows:**
-```json
-{
-  "mcpServers": {
-    "blackout-tracker": {
-      "command": "C:\\Users\\john\\projects\\blackout_tracker_mcp\\venv\\Scripts\\python.exe",
-      "args": ["-m", "src.server"],
-      "cwd": "C:\\Users\\john\\projects\\blackout_tracker_mcp",
-      "env": {}
-    }
-  }
-}
-```
-
----
-
-### Alternative: Using mcp.json (Quick Testing)
-
-If there's an `mcp.json` file in your project directory, Claude Code will automatically detect and offer to use the MCP server when you open the project folder.
-
-This is the fastest way to test during development.
-
-### Verification
-
-After connecting the MCP server, you'll see available tools:
-- `set_address` - Configure your address
-- `check_outage_schedule` - Check outage schedules
-- `get_next_outage` - Find the next upcoming outage
-- `get_outages_for_day` - Get all outages for a specific day
 
 ## Usage
 
@@ -596,10 +626,6 @@ pytest tests/
 - [DTEK Website](https://www.dtek-dnem.com.ua/ua/shutdowns)
 - [Architecture Documentation](ARCHITECTURE.md)
 
-## License
-
-MIT
-
 ## Authors
 
 - Yaroslav Yenkala
@@ -608,7 +634,3 @@ MIT
 ## Support
 
 For questions and suggestions, please create issues in the repository.
-
----
-
-**Слава Україні!** 🇺🇦

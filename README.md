@@ -114,6 +114,8 @@ docker-compose restart mcp-server
 
 # Run tests
 docker-compose --profile test run --rm test-runner
+# Or run one test specifically:
+docker exec -i blackout-tracker-mcp python tests/test_apostrophe_normalization.py
 ```
 
 ---
@@ -484,21 +486,33 @@ The server expects input via stdio (standard input/output).
 
 ### Running Tests
 
-**Parser tests:**
+**Using Docker (Recommended):**
 ```bash
-# Full cycle test
-python test_fill_form.py
+# Run specific test
+docker-compose run --rm --entrypoint python test-runner tests/test_mcp_server.py
 
-# Visible browser test
-python test_visible.py
+# Run apostrophe normalization test
+docker-compose run --rm --entrypoint python test-runner tests/test_apostrophe_normalization.py
 
-# Save HTML test
-python test_save_html.py
+# Run parser integration test
+docker-compose run --rm --entrypoint python test-runner tests/test_fill_form.py
 ```
 
-**MCP server validation:**
+**Using local Python environment:**
 ```bash
-python test_mcp_server.py
+# Activate virtual environment first
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Parser tests
+python tests/test_fill_form.py           # Full cycle test
+python tests/test_visible.py             # Visible browser test
+python tests/test_save_html.py           # Save HTML test
+
+# MCP server validation
+python tests/test_mcp_server.py
+
+# Apostrophe normalization test (regression test)
+python tests/test_apostrophe_normalization.py
 ```
 
 ### Running Unit Tests (when available)

@@ -174,6 +174,11 @@ class DTEKParser:
             street: Street name (e.g., "Просп. Миру" or just "Миру")
             house_number: House number (e.g., "4")
         """
+        # Normalize apostrophes - replace special apostrophe (ʼ U+02BC) with regular apostrophe (')
+        # This helps with autocomplete on DTEK website
+        city = city.replace('ʼ', "'").replace('ʹ', "'").replace('′', "'")
+        street = street.replace('ʼ', "'").replace('ʹ', "'").replace('′', "'")
+
         # Wait for form to be visible
         await asyncio.sleep(1)
 

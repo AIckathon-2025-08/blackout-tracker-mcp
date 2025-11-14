@@ -68,6 +68,8 @@
 - [x] Test Docker image (validation tests passed successfully)
 - [x] Add Docker configuration for Claude Desktop
 - [x] Create profiles for different testing scenarios
+- [x] Fix Playwright browser installation for non-root user (mcpuser)
+- [x] Add PYTHONPATH environment variable for proper module resolution
 
 ## Phase 8: Internationalization (i18n) ✅ PARTIALLY COMPLETED
 - [x] Add English language support. Will support 2 languages: Ukrainian and English
@@ -103,6 +105,8 @@
 - [x] Manual parser tests (test_fill_form.py, test_visible.py, test_save_html.py)
 - [x] Testing on real addresses (Dnipro, Kryvyi Rih)
 - [x] MCP server validation test (test_mcp_server.py)
+- [x] Apostrophe normalization test (test_apostrophe_normalization.py) - regression test for Unicode apostrophe bug
 - [ ] Unit tests for parser (pytest)
 - [ ] Tests for MCP tools
 - [ ] End-to-end testing
+

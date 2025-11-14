@@ -59,9 +59,8 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN playwright install chromium && \
-    playwright install-deps chromium
+# Install Playwright system dependencies as root
+RUN playwright install-deps chromium
 
 # Copy application code
 COPY src/ ./src/
@@ -73,12 +72,15 @@ RUN mkdir -p /root/.config/blackout_tracker_mcp
 # Set up proper permissions
 RUN chmod -R 755 /app
 
-# Add a non-root user for running the application (optional but recommended)
+# Add a non-root user for running the application
 RUN useradd -m -u 1000 mcpuser && \
     chown -R mcpuser:mcpuser /app /root/.config/blackout_tracker_mcp
 
 # Switch to non-root user
 USER mcpuser
+
+# Install Playwright browsers as mcpuser (they'll be in /home/mcpuser/.cache)
+RUN playwright install chromium
 
 # Health check (optional - checks if Python can import the server module)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

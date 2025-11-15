@@ -109,13 +109,13 @@
 - [x] Merge CLAUDE_CODE_SETUP.md into README.md
 - [x] Docker setup documentation
 
-## Testing ✅ PARTIALLY COMPLETED
+## Testing ✅ COMPLETED
 - [x] Manual parser tests (test_fill_form.py, test_visible.py, test_save_html.py)
 - [x] Testing on real addresses (Dnipro, Kryvyi Rih)
 - [x] MCP server validation test (test_mcp_server.py)
 - [x] Apostrophe normalization test (test_apostrophe_normalization.py) - regression test for Unicode apostrophe bug
 - [x] Internationalization test (test_i18n.py) - tests English, Ukrainian translations and completeness
-- [ ] Unit tests for parser (pytest)
-- [ ] Tests for MCP tools
-- [ ] End-to-end testing
+- [x] Unit tests for parser (pytest) - test_parser_unit.py with 14 tests covering _detect_outage_type_from_class, _parse_actual_schedule, _parse_possible_schedule
+- [x] Tests for MCP tools - test_mcp_tools.py with 16 tests covering all 6 MCP tools (set_address, check_outage_schedule, get_next_outage, get_outages_for_day, configure_monitoring, check_upcoming_outages)
+- [x] End-to-end testing - test_e2e.py with 9 workflow tests (happy path, cache behavior, error recovery, day filtering, monitoring, include_possible parameter, stale cache)
 

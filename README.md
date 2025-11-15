@@ -149,7 +149,7 @@ After connecting the MCP server, you'll see available tools:
 First, configure your address (note: use prefixes as they appear on DTEK website):
 
 ```
-Set my address: м. Дніпро, вул. Вʼячеслава Липinського, 4
+Set my address: м. Дніпро, вул. Вʼячеслава Липинського, 4
 ```
 
 Claude will call `set_address` with the correct parameters.

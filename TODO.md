@@ -47,11 +47,14 @@
 - [x] Add validation test (test_mcp_server.py)
 - [x] Implement tool: `configure_monitoring`
 
-## Phase 5: Monitoring and Notification Logic
-- [ ] Implement periodic checking of accurate schedule (ACTUAL)
-- [ ] Detect accurate schedule changes (comparison with previous version)
-- [ ] Notification logic N minutes before outage (for accurate schedule only)
-- [ ] Format notifications with outage type indication
+## Phase 5: Monitoring and Notification Logic ✅ COMPLETED
+- [x] Implement periodic checking of accurate schedule (ACTUAL) - monitor_outages_daemon.py with configurable check_interval_minutes
+- [x] Detect accurate schedule changes (comparison with previous version) - notified_outages set tracks already sent notifications
+- [x] Notification logic N minutes before outage (for accurate schedule only) - notification_before_minutes parameter controls timing
+- [x] Format notifications with outage type indication - Terminal notifications + log file with outage details
+- [x] Docker service for notification daemon (blackout-notifier container)
+- [x] Bilingual notifications (English + Ukrainian)
+- [x] macOS notification integration via watch_notifications.sh + terminal-notifier
 
 ## Phase 6: Claude Code Integration ✅ COMPLETED
 - [x] Create configuration file for Claude Code (mcp.json)

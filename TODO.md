@@ -45,7 +45,7 @@
 - [x] Implement tool: `set_address` (configure user address)
 - [x] Create configuration files (mcp.json, CLAUDE_CODE_SETUP.md)
 - [x] Add validation test (test_mcp_server.py)
-- [ ] Implement tool: `configure_monitoring` (monitoring configuration - optional for later)
+- [x] Implement tool: `configure_monitoring`
 
 ## Phase 5: Monitoring and Notification Logic
 - [ ] Implement periodic checking of accurate schedule (ACTUAL)
@@ -53,7 +53,7 @@
 - [ ] Notification logic N minutes before outage (for accurate schedule only)
 - [ ] Format notifications with outage type indication
 
-## Phase 6: Claude Code Integration 🔄 IN PROGRESS (NEXT PRIORITY!)
+## Phase 6: Claude Code Integration ✅ COMPLETED
 - [x] Create configuration file for Claude Code (mcp.json)
 - [x] Create detailed setup documentation
 

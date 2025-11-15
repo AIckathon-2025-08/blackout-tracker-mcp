@@ -73,6 +73,7 @@ Choose one of the following approaches based on your needs:
 **Prerequisites:**
 - Docker installed ([Get Docker](https://docs.docker.com/get-docker/))
 - Docker Compose (usually comes with Docker Desktop)
+- For macOS: terminal-notifier (`brew install terminal-notifier`). This needed because docker containers run in an isolated environment and cannot directly access macOS system APIs
 
 **Step-by-step setup:**
 
@@ -90,9 +91,11 @@ docker-compose build
 **3. Start both MCP server and notification daemon:**
 ```bash
 docker-compose up -d
+./watch_notifications.sh
 
 # or:
-docker-compose up -d mcp-server && docker-compose up -d notification-daemon
+docker-compose up -d mcp-server && docker-compose up -d notification-daemon && ./watch_notifications.sh
+
 ```
 
 This will start:
@@ -163,6 +166,119 @@ The notification daemon automatically:
 - Checks for upcoming outages every N minutes (configurable)
 - Sends terminal notifications when outage is approaching
 - Keeps running in background even when Claude is closed
+
+#### macOS Native Notifications
+
+**Why Docker Can't Send macOS Notifications Directly:**
+
+Docker containers run in an isolated environment and cannot directly access macOS system APIs, including the Notification Center. The daemon running inside Docker can only write to logs and stdout, which is why we need a bridge solution to forward notifications to your macOS Notification Center.
+
+**Solution: Using terminal-notifier + watch script**
+
+To receive native macOS notifications in Notification Center:
+
+**1. Install terminal-notifier:**
+
+```bash
+brew install terminal-notifier
+```
+
+This tool allows sending notifications to macOS Notification Center from the command line.
+
+**2. Run the notification watch script:**
+
+The `watch_notifications.sh` script monitors Docker daemon logs and forwards notifications to macOS:
+
+**Manual (one-time) execution:**
+```bash
+./watch_notifications.sh
+```
+
+This will:
+- Monitor the `blackout-notifier` container logs in real-time
+- Detect when the daemon sends notifications (by watching for "Notification sent at HH:MM:SS")
+- Send native macOS notifications via terminal-notifier
+- Send only ONE notification per outage (no duplicates)
+
+Press `Ctrl+C` to stop watching.
+
+**3. OPTIONAL: Automatic startup on system login (LaunchAgent):**
+
+To have notifications start automatically when you log in to macOS:
+
+**Create LaunchAgent plist file:**
+```bash
+mkdir -p ~/Library/LaunchAgents
+```
+
+Create `~/Library/LaunchAgents/com.blackout.notifier.plist`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.blackout.notifier</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/ABSOLUTE/PATH/TO/PROJECT/watch_notifications.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/blackout-notifier-watch.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/blackout-notifier-watch-error.log</string>
+    <key>WorkingDirectory</key>
+    <string>/ABSOLUTE/PATH/TO/PROJECT</string>
+</dict>
+</plist>
+```
+
+**Important:** Replace `/ABSOLUTE/PATH/TO/PROJECT` with your actual project path.
+
+**Load the LaunchAgent:**
+```bash
+launchctl load ~/Library/LaunchAgents/com.blackout.notifier.plist
+```
+
+**Verify it's running:**
+```bash
+launchctl list | grep blackout
+```
+
+**Stop the LaunchAgent (if needed):**
+```bash
+launchctl unload ~/Library/LaunchAgents/com.blackout.notifier.plist
+```
+
+**View logs:**
+```bash
+tail -f /tmp/blackout-notifier-watch.log
+```
+
+**How It Works:**
+
+1. **Daemon** (in Docker) checks for outages and writes "Notification sent at HH:MM:SS" to logs
+2. **Watch script** (on macOS host) monitors Docker logs via `docker logs -f`
+3. **Script detects** new notification by timestamp (no duplicates)
+4. **terminal-notifier** sends native macOS notification with sound
+
+**Notification Details:**
+- **Title**: "⚡ ВІДКЛЮЧЕННЯ СВІТЛА"
+- **Subtitle**: ""In $minutes minutes | Через $minutes хвилин
+- **Message**: "⏰ Prepare now: charge devices, save work! ⏰ Підготуйтеся: зарядіть пристрої, збережіть роботу!"
+- **Sound**: "Sosumi"
+- **Grouped**: All notifications grouped as "power-outage" (only most recent visible)
+
+**Important Notes:**
+- Only ONE notification per outage is sent (the watch script prevents duplicates by tracking timestamps)
+- Notifications arrive a few seconds after the daemon detects the outage
+- Make sure Docker containers are running: `docker-compose up -d`
+- The daemon must have monitoring enabled (see usage examples above)
 
 ---
 

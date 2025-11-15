@@ -67,10 +67,15 @@ def write_notification_log(title: str, message: str, log_path: str = "/tmp/outag
         print(f"⚠️  Could not write to log: {e}")
 
 
-def check_upcoming_outages():
+def check_upcoming_outages(notified_outages: set):
     """
     Check for upcoming outages and send notifications if needed.
-    Returns True if notification was sent, False otherwise.
+
+    Args:
+        notified_outages: Set of already notified outage identifiers (date + start_hour)
+
+    Returns:
+        True if notification was sent, False otherwise.
     """
     i18n = get_i18n()
 
@@ -118,6 +123,17 @@ def check_upcoming_outages():
     if upcoming_outages:
         # Get the closest outage
         closest_outage, minutes_until = min(upcoming_outages, key=lambda x: x[1])
+
+        # Create unique identifier for this outage (date + start hour)
+        outage_id = f"{closest_outage.date}_{closest_outage.start_hour:02d}"
+
+        # Check if we've already notified about this outage
+        if outage_id in notified_outages:
+            # Already notified, skip
+            return False
+
+        # Mark this outage as notified
+        notified_outages.add(outage_id)
 
         # Format notification
         time_str = f"{closest_outage.start_hour:02d}:00-{closest_outage.end_hour:02d}:00"
@@ -188,6 +204,9 @@ def main():
         'check_interval_minutes': monitoring.check_interval_minutes
     }
 
+    # Track which outages have been notified (to send only once per outage)
+    notified_outages = set()
+
     # Config check interval (30 seconds) - separate from outage check interval
     CONFIG_CHECK_INTERVAL = 30
 
@@ -217,13 +236,24 @@ def main():
                 print(f"{'=' * 80}\n")
                 last_known_config = current_config
 
+                # Clear notified outages when config changes (so user gets re-notified with new settings)
+                notified_outages.clear()
+
+                # Force immediate check after config change to avoid missing notifications
+                if monitoring.enabled:
+                    last_check_time = datetime.now() - timedelta(hours=2)
+
             # Check if it's time to check for outages
-            # Use the smaller of check_interval_minutes or notification_before_minutes/2
-            # This ensures we don't miss the notification window
-            effective_check_interval = min(
-                monitoring.check_interval_minutes,
-                max(5, monitoring.notification_before_minutes // 2)  # At least 5 minutes
-            )
+            # For accurate notifications, check frequently enough to catch the window
+            if monitoring.notification_before_minutes < 60:
+                # For short notification windows, check every 1-2 minutes for accuracy
+                effective_check_interval = max(1, monitoring.notification_before_minutes // 15)
+            else:
+                # For long notification windows, use larger intervals
+                effective_check_interval = min(
+                    monitoring.check_interval_minutes,
+                    max(5, monitoring.notification_before_minutes // 10)
+                )
 
             minutes_since_last_check = (current_time - last_check_time).total_seconds() / 60
             should_check_outages = minutes_since_last_check >= effective_check_interval
@@ -233,7 +263,7 @@ def main():
                 check_count += 1
                 print(f"[{current_time.strftime('%H:%M:%S')}] Check #{check_count}: Looking for upcoming outages...")
 
-                notification_sent = check_upcoming_outages()
+                notification_sent = check_upcoming_outages(notified_outages)
 
                 if notification_sent:
                     last_notification_time = current_time

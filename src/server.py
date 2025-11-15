@@ -582,8 +582,8 @@ async def handle_check_upcoming_outages(arguments: dict) -> list[TextContent]:
     for schedule in actual_schedules:
         # Check if this is today's schedule
         if schedule.date == today_date:
-            # For today, only consider outages that haven't ended yet
-            if schedule.end_hour > current_hour:
+            # For today, only consider outages that haven't started yet
+            if schedule.start_hour > current_hour:
                 next_outage = schedule
                 break
         else:

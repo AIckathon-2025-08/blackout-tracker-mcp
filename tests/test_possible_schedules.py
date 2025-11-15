@@ -105,7 +105,7 @@ async def test_cache_without_possible_schedules():
         print("\nStep 3: Fetching schedule WITH possible schedules...")
         cache2 = await fetch_dtek_schedule(
             city="м. Дніпро",
-            street="вул. Вʼячеслава Липinського",
+            street="вул. В'ячеслава Липинського",
             house_number="4",
             include_possible=True
         )

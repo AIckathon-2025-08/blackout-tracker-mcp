@@ -202,7 +202,7 @@ async def test_all_outages_past():
         # Set address first
         await handle_set_address({
             "city": "м. Дніпро",
-            "street": "вул. Вʼячеслава Липinського",
+            "street": "вул. В'ячеслава Липинського",
             "house_number": "4"
         })
 

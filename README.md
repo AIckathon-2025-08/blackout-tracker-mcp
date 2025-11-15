@@ -33,6 +33,10 @@ An MCP server for monitoring electricity outage schedules in Ukraine (DTEK Dnipr
 
 This MCP server helps track scheduled electricity outages and provides timely notifications about upcoming shutdowns. Especially useful for planning laptop charging and managing other devices during power outages.
 
+## Demo video link to google drive:
+
+https://drive.google.com/file/d/1RsHJWdFBvEGF-KOu3yS7BWbEXgPU-E2V/view?usp=sharing
+
 ## Screenshots
 
 - Set address:
@@ -51,6 +55,12 @@ This MCP server helps track scheduled electricity outages and provides timely no
 
 - Check outage for specific day by hours:
 ![img.png](screenshots/check_outage_for_day.png)
+
+- Configure monitoring (enable notifications):
+![img.png](screenshots/configure_monitoring.png)
+
+- Notification about upcoming outage:
+![img.png](screenshots/upcoming_outage_notification.png)
 
 ### Key Features
 
@@ -436,7 +446,7 @@ You can use natural language in either English or Ukrainian when talking to Clau
 
 #### English Commands:
 ```
-Set my address to м. Дніпро, вул. Вʼячеслава Липinського, 4
+Set my address to м. Дніпро, вул. В'ячеслава Липинського
 Check electricity outage schedule
 Check electricity outage schedule for today (with time when we have electricity too and summary)
 When is the next outage?

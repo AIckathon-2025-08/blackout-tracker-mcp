@@ -123,3 +123,4 @@ poetry.lock
 .env
 .env.local
 .env.*.local
+battery_status.json

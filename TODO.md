@@ -97,8 +97,14 @@
 - [ ] Display all request options in both languages in MCP help (future enhancement)
 
 ## Phase 9: Additional Features
-- [ ] Calculate optimal charging time (tool: `calculate_charging_time`)
-- [ ] Configurable check intervals
+- [x] Calculate optimal charging time (tool: `calculate_charging_time`)
+  - [x] Add tool definition to server.py
+  - [x] Implement charging time calculation logic
+  - [x] Analyze schedule to find power-on windows
+  - [x] Recommend optimal charging windows
+  - [x] Add English and Ukrainian translations
+  - [x] Create unit tests (test_calculate_charging.py)
+- [x] Configurable check intervals (already implemented via MonitoringConfig.check_interval_minutes)
 - [ ] Multiple addresses support
 - [ ] Schedule change history
 
@@ -121,4 +127,5 @@
 - [x] Unit tests for parser (pytest) - test_parser_unit.py with 14 tests covering _detect_outage_type_from_class, _parse_actual_schedule, _parse_possible_schedule
 - [x] Tests for MCP tools - test_mcp_tools.py with 16 tests covering all 6 MCP tools (set_address, check_outage_schedule, get_next_outage, get_outages_for_day, configure_monitoring, check_upcoming_outages)
 - [x] End-to-end testing - test_e2e.py with 9 workflow tests (happy path, cache behavior, error recovery, day filtering, monitoring, include_possible parameter, stale cache)
+- [x] Calculate charging time tests - test_calculate_charging.py with 6 tests covering parameter validation, charging calculation, and window recommendation logic
 

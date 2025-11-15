@@ -11,6 +11,8 @@ services:
     volumes:
       # Mount configuration directory to persist address and cache
       - mcp-config:/home/mcpuser/.config/blackout_tracker_mcp
+      # Mount battery bridge file (for MacBook battery auto-detection in Docker)
+      - ./battery_status.json:/data/battery_status.json:ro
       # Optional: Mount source code for development (comment out for production)
       # - ./src:/app/src:ro
     environment:
@@ -31,6 +33,8 @@ services:
     volumes:
       # Share config with main server
       - mcp-config:/home/mcpuser/.config/blackout_tracker_mcp
+      # Mount battery bridge file (for MacBook battery auto-detection in Docker)
+      - ./battery_status.json:/data/battery_status.json:ro
     environment:
       - PYTHONUNBUFFERED=1
       - TERM=xterm-256color  # Enable terminal colors and escape sequences

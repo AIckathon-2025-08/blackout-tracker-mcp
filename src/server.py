@@ -16,6 +16,7 @@ from config import config, ScheduleType
 from parser import fetch_dtek_schedule
 from i18n import get_i18n
 from monitoring import setup_monitoring, remove_monitoring, check_monitoring_status
+from battery import get_battery_info, estimate_charging_power, get_default_target_percents
 
 
 # Configure logging
@@ -134,6 +135,20 @@ async def list_tools() -> list[Tool]:
                 "type": "object",
                 "properties": {}
             }
+        ),
+        Tool(
+            name="calculate_charging_time",
+            description=i18n.t("tool_descriptions.calculate_charging_time"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "target_charge_percent": {
+                        "type": "integer",
+                        "description": i18n.t("tool_params.target_charge_percent_optional")
+                    }
+                },
+                "required": []
+            }
         )
     ]
 
@@ -154,6 +169,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             return await handle_configure_monitoring(arguments)
         elif name == "check_upcoming_outages":
             return await handle_check_upcoming_outages(arguments)
+        elif name == "calculate_charging_time":
+            return await handle_calculate_charging_time(arguments)
         else:
             return [TextContent(type="text", text=f"Невідомий інструмент: {name}")]
     except Exception as e:
@@ -613,6 +630,185 @@ async def handle_check_upcoming_outages(arguments: dict) -> list[TextContent]:
             next_outage=next_outage_info
         )
     )]
+
+
+async def handle_calculate_charging_time(arguments: dict) -> list[TextContent]:
+    """
+    Handle calculate_charging_time tool.
+
+    Automatically retrieves battery info from MacBook and calculates
+    when to start charging to reach target percentage before next outage.
+    """
+    # Check if address is configured
+    address = config.get_address()
+    if not address:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.address_not_configured")
+        )]
+
+    # Load schedule from cache
+    cached = config.load_schedule_cache()
+    if not cached or not cached.actual_schedules:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.no_schedule_for_charging")
+        )]
+
+    # Get battery info automatically (MAGIC!)
+    battery = get_battery_info()
+    if not battery:
+        return [TextContent(
+            type="text",
+            text=i18n.t("messages.battery_info_unavailable_bridge")
+        )]
+
+    current_charge = battery.current_charge_percent
+    capacity_wh = battery.capacity_wh
+    charging_power_w = battery.charging_power_w or estimate_charging_power()
+
+    # Get target percentages (default: [80, 100])
+    targets = arguments.get("target_charge_percent")
+    if targets:
+        target_percents = [targets] if isinstance(targets, int) else targets
+    else:
+        target_percents = get_default_target_percents()
+
+    # Build response header
+    result = f"{i18n.t('messages.charging_recommendation_title')}\n\n"
+    result += f"🔋 {i18n.t('messages.battery_status')}\n"
+    result += f"  • {i18n.t('messages.current_charge')}: {current_charge}%\n"
+    result += f"  • {i18n.t('messages.battery_capacity')}: {capacity_wh:.1f} Wh\n"
+    result += f"  • {i18n.t('messages.charging_status')}: "
+    if battery.is_charging:
+        result += f"{i18n.t('messages.charging_yes')} ({battery.charging_power_w:.1f}W)\n"
+    else:
+        result += f"{i18n.t('messages.charging_no')}"
+        if battery.discharge_rate_w:
+            result += f" ({i18n.t('messages.consuming')} {battery.discharge_rate_w:.1f}W)\n"
+        else:
+            result += "\n"
+    result += "\n"
+
+    # Get current time
+    now = datetime.now()
+    current_date = now.strftime("%d.%m.%y")
+    current_hour = now.hour
+    current_minute = now.minute
+
+    # Get actual schedules only
+    actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
+
+    # Find next outage
+    next_outage = None
+    next_outage_time = None
+
+    for schedule in actual_schedules:
+        if schedule.date == current_date:
+            # For today, only consider outages that haven't started yet
+            if schedule.start_hour > current_hour or (schedule.start_hour == current_hour and current_minute < 60):
+                next_outage = schedule
+                # Calculate time until outage in hours
+                next_outage_time = schedule.start_hour + (0 / 60) - (current_hour + current_minute / 60)
+                break
+        else:
+            # Future dates - take first outage
+            next_outage = schedule
+            # Rough estimate: assume it's tomorrow
+            next_outage_time = (24 - current_hour) + schedule.start_hour - (current_minute / 60)
+            break
+
+    if not next_outage:
+        result += i18n.t("messages.no_upcoming_outages_for_charging")
+        return [TextContent(type="text", text=result)]
+
+    # Calculate recommendations for each target percentage
+    recommendations = []
+
+    for target_percent in target_percents:
+        if target_percent <= current_charge:
+            continue  # Already at or above this target
+
+        # Calculate how much charge is needed
+        charge_needed_percent = target_percent - current_charge
+        charge_needed_wh = capacity_wh * (charge_needed_percent / 100)
+
+        # Calculate charging time needed
+        charging_time_hours = charge_needed_wh / charging_power_w
+
+        # Calculate when to start charging to finish before outage
+        time_before_outage_to_start = next_outage_time - charging_time_hours
+
+        # Format charging time
+        hours_int = int(charging_time_hours)
+        minutes_int = int((charging_time_hours - hours_int) * 60)
+
+        # Calculate actual start time
+        start_hour = current_hour + int(time_before_outage_to_start)
+        start_minute = current_minute + int((time_before_outage_to_start - int(time_before_outage_to_start)) * 60)
+
+        if start_minute >= 60:
+            start_hour += 1
+            start_minute -= 60
+
+        # Calculate completion time
+        completion_hour = start_hour + hours_int
+        completion_minute = start_minute + minutes_int
+        if completion_minute >= 60:
+            completion_hour += 1
+            completion_minute -= 60
+
+        recommendations.append({
+            'target': target_percent,
+            'charge_needed_wh': charge_needed_wh,
+            'charging_time_hours': charging_time_hours,
+            'hours': hours_int,
+            'minutes': minutes_int,
+            'time_before_outage_to_start': time_before_outage_to_start,
+            'start_hour': start_hour % 24,
+            'start_minute': start_minute,
+            'completion_hour': completion_hour % 24,
+            'completion_minute': completion_minute,
+            'can_charge_now': time_before_outage_to_start <= 0
+        })
+
+    if not recommendations:
+        result += i18n.t("messages.already_charged")
+        return [TextContent(type="text", text=result)]
+
+    # Show next outage info
+    outage_time_str = f"{next_outage.start_hour:02d}:00"
+    result += f"⚠️ {i18n.t('messages.next_outage_at')}: {next_outage.date} {next_outage.day_of_week}, {outage_time_str}\n"
+    result += f"   ({i18n.t('messages.in_hours', hours=round(next_outage_time, 1))})\n\n"
+
+    # Show recommendations
+    result += f"📱 {i18n.t('messages.charging_recommendations')}:\n\n"
+
+    for rec in recommendations:
+        target_emoji = "🟢" if rec['target'] == 80 else "🔋"
+        result += f"{target_emoji} {i18n.t('messages.target_label')}: {rec['target']}%\n"
+        result += f"   • {i18n.t('messages.charging_time_needed')}: {rec['hours']}h {rec['minutes']}m\n"
+
+        if rec['can_charge_now']:
+            result += f"   • {i18n.t('messages.start_charging')}: {i18n.t('messages.now_immediately')} ⚡\n"
+        else:
+            start_time_str = f"{rec['start_hour']:02d}:{rec['start_minute']:02d}"
+            result += f"   • {i18n.t('messages.start_charging')}: {start_time_str}\n"
+
+        completion_str = f"{rec['completion_hour']:02d}:{rec['completion_minute']:02d}"
+        result += f"   • {i18n.t('messages.finish_charging')}: {completion_str} ({i18n.t('messages.before_outage')})\n"
+        result += "\n"
+
+    # Add recommendation
+    priority_rec = recommendations[0]  # First target (usually 80%)
+
+    if priority_rec['can_charge_now']:
+        result += f"✅ {i18n.t('messages.recommendation')}: {i18n.t('messages.plug_in_now')}\n"
+    else:
+        start_time_str = f"{priority_rec['start_hour']:02d}:{priority_rec['start_minute']:02d}"
+        result += f"💡 {i18n.t('messages.recommendation')}: {i18n.t('messages.plug_in_at', time=start_time_str)}\n"
+
+    return [TextContent(type="text", text=result)]
 
 
 async def main():

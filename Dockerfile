@@ -75,9 +75,14 @@ COPY pyproject.toml .
 # Set up proper permissions
 RUN chmod -R 755 /app
 
+# Create directory for battery bridge file mount (as root)
+# Don't create the file itself - let Docker mount it
+RUN mkdir -p /data
+
 # Add a non-root user for running the application
 RUN useradd -m -u 1000 mcpuser && \
-    chown -R mcpuser:mcpuser /app
+    chown -R mcpuser:mcpuser /app && \
+    chown mcpuser:mcpuser /data
 
 # Switch to non-root user
 USER mcpuser

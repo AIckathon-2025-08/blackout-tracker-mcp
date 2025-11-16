@@ -4,7 +4,9 @@
 # Collects battery information from macOS and makes it available to Docker container
 # Similar to watch_notifications.sh approach
 
-BATTERY_FILE="/Users/Yaroslav_Yenkala/projects/epam/aickathon/electricity_shutdowns_mcp/battery_status.json"
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BATTERY_FILE="${SCRIPT_DIR}/battery_status.json"
 UPDATE_INTERVAL=10  # seconds
 
 echo "🔋 Battery Info Bridge started"

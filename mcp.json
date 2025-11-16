@@ -1,10 +1,16 @@
 {
   "mcpServers": {
-    "blackout-tracker": {
-      "command": "python",
-      "args": ["-m", "src.server"],
-      "cwd": "${workspaceFolder}",
-      "env": {}
+    "electricity-shutdowns": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "blackout-tracker-mcp",
+        "python",
+        "-m",
+        "src.server"
+      ]
     }
   }
 }

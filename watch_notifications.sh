@@ -6,6 +6,19 @@ echo "👀 Watching for power outage notifications..."
 echo "Press Ctrl+C to stop"
 echo ""
 
+# Send greeting notification to confirm system is working
+echo "[$(date '+%H:%M:%S')] 👋 Sending greeting notification..."
+terminal-notifier \
+    -title "⚡ Notification System Active" \
+    -subtitle "Blackout Tracker is watching for outages" \
+    -message "✓ Your notifications are enabled
+You'll be alerted before power outages" \
+    -sound "Funk" \
+    -group "blackout-system"
+
+echo "✓ Greeting notification sent"
+echo ""
+
 # Track last notification time to avoid duplicates
 last_notified=""
 

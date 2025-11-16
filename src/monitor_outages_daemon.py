@@ -20,7 +20,7 @@ import signal
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from config import config, ScheduleType
+from config import config, ScheduleType, TrackedOutage
 from i18n import get_i18n
 
 # Global flag for graceful shutdown
@@ -135,6 +135,16 @@ def check_upcoming_outages(notified_outages: set):
         # Mark this outage as notified
         notified_outages.add(outage_id)
 
+        # Track this outage for restoration monitoring
+        tracked_outage = TrackedOutage(
+            date=closest_outage.date,
+            start_hour=closest_outage.start_hour,
+            end_hour=closest_outage.end_hour,
+            notified_about_start=True,
+            notified_about_change=False
+        )
+        config.update_monitoring(tracked_outage=tracked_outage)
+
         # Format notification
         time_str = f"{closest_outage.start_hour:02d}:00-{closest_outage.end_hour:02d}:00"
         outage_type = i18n.t(f"messages.outage_types.{closest_outage.outage_type}")
@@ -152,6 +162,113 @@ def check_upcoming_outages(notified_outages: set):
         send_terminal_notification(title, message)
         write_notification_log(title, message)
 
+        return True
+
+    return False
+
+
+def check_schedule_changes():
+    """
+    Check if the schedule has changed for the currently tracked outage.
+    Specifically checks 10 minutes before power restoration if the restoration time changed.
+
+    Returns:
+        True if notification was sent, False otherwise.
+    """
+    monitoring = config.get_monitoring()
+
+    if not monitoring.enabled or not monitoring.tracked_outage:
+        return False
+
+    # Get current time
+    now = datetime.now()
+    current_hour = now.hour
+    current_minute = now.minute
+    today_date = now.strftime("%d.%m.%y")
+
+    tracked = monitoring.tracked_outage
+
+    # Only check for today's outages
+    if tracked.date != today_date:
+        return False
+
+    # Calculate minutes until restoration
+    minutes_until_restoration = (tracked.end_hour - current_hour) * 60 - current_minute
+
+    # Check if we're within 10 minutes of restoration time
+    if not (0 <= minutes_until_restoration <= 10):
+        return False
+
+    # If we already notified about schedule change for this outage, skip
+    if tracked.notified_about_change:
+        return False
+
+    # Load current schedule from cache
+    cached = config.load_schedule_cache()
+    if not cached or not cached.actual_schedules:
+        return False
+
+    # Find the current outage in the schedule
+    actual_schedules = [s for s in cached.actual_schedules
+                       if s.schedule_type == ScheduleType.ACTUAL]
+
+    current_outage = None
+    for schedule in actual_schedules:
+        if (schedule.date == today_date and
+            schedule.start_hour == tracked.start_hour):
+            current_outage = schedule
+            break
+
+    if not current_outage:
+        # Outage no longer in schedule - it was cancelled!
+        address = config.get_address()
+        title = "✅ SCHEDULE CHANGED"
+        message = (
+            f"🎉 Good news! Power outage was cancelled!\n"
+            f"⏰ Was scheduled: {tracked.start_hour:02d}:00-{tracked.end_hour:02d}:00\n"
+            f"🏠 Address: {address.to_string() if address else 'N/A'}\n"
+            f"\n💡 Power should be available now or soon!"
+        )
+        send_terminal_notification(title, message)
+        write_notification_log(title, message)
+
+        # Mark as notified
+        tracked.notified_about_change = True
+        config.update_monitoring(tracked_outage=tracked)
+        return True
+
+    # Check if restoration time changed
+    if current_outage.end_hour != tracked.end_hour:
+        address = config.get_address()
+        old_time = f"{tracked.end_hour:02d}:00"
+        new_time = f"{current_outage.end_hour:02d}:00"
+
+        if current_outage.end_hour > tracked.end_hour:
+            # Outage extended
+            title = "⚠️ SCHEDULE CHANGED - OUTAGE EXTENDED"
+            emoji = "😞"
+            change_text = "extended"
+        else:
+            # Outage shortened
+            title = "✅ SCHEDULE CHANGED - POWER RETURNS EARLIER"
+            emoji = "🎉"
+            change_text = "shortened"
+
+        message = (
+            f"{emoji} Power restoration time has changed!\n"
+            f"⏰ Was scheduled to return: {old_time}\n"
+            f"🔄 Now will return: {new_time}\n"
+            f"📊 Outage was {change_text}\n"
+            f"🏠 Address: {address.to_string() if address else 'N/A'}"
+        )
+
+        send_terminal_notification(title, message)
+        write_notification_log(title, message)
+
+        # Update tracked outage with new end time
+        tracked.end_hour = current_outage.end_hour
+        tracked.notified_about_change = True
+        config.update_monitoring(tracked_outage=tracked)
         return True
 
     return False
@@ -270,6 +387,11 @@ def main():
                     print(f"✓ Notification sent at {current_time.strftime('%H:%M:%S')}")
                 else:
                     print(f"✓ No upcoming outages in next {monitoring.notification_before_minutes} min")
+
+                # Also check for schedule changes (10 min before restoration)
+                schedule_change_sent = check_schedule_changes()
+                if schedule_change_sent:
+                    print(f"✓ Schedule change notification sent at {current_time.strftime('%H:%M:%S')}")
 
                 last_check_time = current_time
                 print(f"   Next check in {effective_check_interval} minutes\n")

@@ -20,11 +20,21 @@ class Address(BaseModel):
         return f"{self.city}, {self.street}, буд. {self.house_number}"
 
 
+class TrackedOutage(BaseModel):
+    """Tracked outage for restoration monitoring."""
+    date: str  # "16.11.25"
+    start_hour: int  # When outage starts
+    end_hour: int  # When power should be restored
+    notified_about_start: bool = False  # Whether we sent the outage start notification
+    notified_about_change: bool = False  # Whether we sent schedule change notification
+
+
 class MonitoringConfig(BaseModel):
     """Monitoring configuration."""
     check_interval_minutes: int = Field(default=60, description="Interval for checking schedule updates (in minutes)")
     notification_before_minutes: int = Field(default=60, description="How many minutes before outage to notify")
     enabled: bool = Field(default=False, description="Whether monitoring is enabled")
+    tracked_outage: Optional[TrackedOutage] = Field(default=None, description="Currently tracked outage for restoration monitoring")
 
 
 class OutageType:

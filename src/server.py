@@ -562,12 +562,19 @@ async def handle_check_upcoming_outages(arguments: dict) -> list[TextContent]:
 
     # Find outages starting within notification window
     upcoming_outages = []
+    today_date = now.strftime("%d.%m.%y")
+
     for schedule in actual_schedules:
+        # Only check today's outages
+        if schedule.date != today_date:
+            continue
+
         # Calculate time until outage starts
         time_until_outage_minutes = (schedule.start_hour - current_hour) * 60 - current_minute
 
         # Check if outage is within notification window
-        if 0 <= time_until_outage_minutes <= monitoring.notification_before_minutes:
+        # Only include outages that haven't started yet (time_until_outage_minutes > 0)
+        if 0 < time_until_outage_minutes <= monitoring.notification_before_minutes:
             upcoming_outages.append((schedule, time_until_outage_minutes))
 
     # If there are upcoming outages, send alert

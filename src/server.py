@@ -278,13 +278,45 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
 
     # Find next outage (future only, not ongoing or past)
-    # An outage is considered "next" if it hasn't started yet
+    # An outage is considered "next" if it hasn't started yet AND we're not in an ongoing outage
     next_outage = None
+    current_outage_end = None
+
+    # First, check if we're currently in an ongoing outage and find where it ends
+    # We need to find the END of the entire continuous outage block, not just the current slot
+    for i, schedule in enumerate(actual_schedules):
+        if schedule.date == today_date:
+            # Check if we're currently inside this outage slot
+            # An outage is ongoing if: start_hour <= current_hour < end_hour
+            if schedule.start_hour <= current_hour < schedule.end_hour:
+                # Found current ongoing outage slot
+                # Now find where the continuous outage block ends
+                current_outage_end = schedule.end_hour
+
+                # Check subsequent slots to find the end of continuous outage
+                for j in range(i + 1, len(actual_schedules)):
+                    next_schedule = actual_schedules[j]
+                    if next_schedule.date != today_date:
+                        break
+                    # If next slot starts where current ends, it's continuous
+                    if next_schedule.start_hour == current_outage_end:
+                        current_outage_end = next_schedule.end_hour
+                    else:
+                        # Gap found, outage block ends
+                        break
+                break
+
+    # Now find the next outage that starts after any ongoing outage ends
     for schedule in actual_schedules:
         # Check if this is today's schedule
         if schedule.date == today_date:
-            # For today, only consider outages that haven't started yet
-            if schedule.start_hour > current_hour:
+            # If we're in an ongoing outage, only consider outages that start at or after it ends
+            if current_outage_end is not None:
+                if schedule.start_hour >= current_outage_end:
+                    next_outage = schedule
+                    break
+            # If not in an ongoing outage, find the first future outage
+            elif current_hour < schedule.start_hour:
                 next_outage = schedule
                 break
         else:

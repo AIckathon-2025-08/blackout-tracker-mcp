@@ -106,10 +106,10 @@ async def test_past_outage_not_returned():
         return False
 
 
-async def test_ongoing_outage_returned():
-    """Test that an ongoing outage is returned as 'next'."""
+async def test_ongoing_outage_skipped():
+    """Test that an ongoing outage is skipped and the next future outage is returned."""
     print("=" * 60)
-    print("Test 2: Ongoing Outage Returned")
+    print("Test 2: Ongoing Outage Skipped (Returns Future Outage)")
     print("=" * 60)
 
     try:
@@ -176,10 +176,10 @@ async def test_ongoing_outage_returned():
             print(f"Future outage: 23:00-24:00")
             print(f"\nResult:\n{result_text}")
 
-            # Should show the ongoing outage (20:00-22:00)
-            assert "20:00-22:00" in result_text or "20:00" in result_text, "Should show ongoing outage"
+            # Should show the future outage (23:00-24:00), not the ongoing one
+            assert "23:00" in result_text or "23:00-24:00" in result_text or "23:00-00:00" in result_text, "Should show future outage, not ongoing"
 
-            print("\n✓ Test 2 PASSED - Ongoing outage correctly returned\n")
+            print("\n✓ Test 2 PASSED - Future outage correctly returned (not ongoing)\n")
             return True
 
         finally:
@@ -397,7 +397,7 @@ async def main():
 
     # Run tests
     results.append(await test_past_outage_not_returned())
-    results.append(await test_ongoing_outage_returned())
+    results.append(await test_ongoing_outage_skipped())
     results.append(await test_all_outages_past())
     results.append(await test_exact_bug_scenario())
 

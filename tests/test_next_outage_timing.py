@@ -15,6 +15,7 @@ sys.path.insert(0, 'src')
 from datetime import datetime, timedelta
 from config import config, OutageSchedule, ScheduleType, ScheduleCache
 from server import handle_get_next_outage, handle_set_address
+from unittest.mock import AsyncMock, patch
 
 
 async def test_past_outage_not_returned():
@@ -54,50 +55,56 @@ async def test_past_outage_not_returned():
             outage_type="definite"
         )
 
-        # Save to cache
+        # Save to cache with current (real) timestamp so it's not considered stale
         cache = ScheduleCache(
             actual_schedules=[past_outage, future_outage],
             possible_schedules=[],
-            last_updated=now
+            last_updated=datetime.now()  # Use real current time to avoid auto-refresh
         )
         config.save_schedule_cache(cache)
 
-        # Temporarily override current time to 22:04
+        # Mock fetch_dtek_schedule to prevent auto-refresh
         import server
-        original_datetime = server.datetime
 
-        class MockDatetime:
-            @staticmethod
-            def now():
-                mock_now = original_datetime.now().replace(hour=22, minute=4)
-                return mock_now
+        async def mock_fetch(*args, **kwargs):
+            return cache
 
-            @staticmethod
-            def strptime(*args, **kwargs):
-                return original_datetime.strptime(*args, **kwargs)
+        with patch('server.fetch_dtek_schedule', mock_fetch):
+            # Temporarily override current time to 22:04
+            original_datetime = server.datetime
 
-        server.datetime = MockDatetime
+            class MockDatetime:
+                @staticmethod
+                def now():
+                    mock_now = original_datetime.now().replace(hour=22, minute=4)
+                    return mock_now
 
-        try:
-            # Get next outage
-            result = await handle_get_next_outage({})
-            result_text = result[0].text
+                @staticmethod
+                def strptime(*args, **kwargs):
+                    return original_datetime.strptime(*args, **kwargs)
 
-            print(f"\nCurrent time (simulated): 22:04")
-            print(f"Past outage: 20:00-21:00")
-            print(f"Future outage: 23:00-24:00")
-            print(f"\nResult:\n{result_text}")
+            server.datetime = MockDatetime
 
-            # Verify that the result shows the future outage (23:00), not the past one (20:00)
-            assert "23:00" in result_text, "Should show future outage at 23:00"
-            assert "20:00" not in result_text, "Should NOT show past outage at 20:00"
+            try:
+                # Get next outage
+                result = await handle_get_next_outage({})
+                result_text = result[0].text
 
-            print("\n✓ Test 1 PASSED - Past outage correctly skipped\n")
-            return True
+                print(f"\nCurrent time (simulated): 22:04")
+                print(f"Past outage: 20:00-21:00")
+                print(f"Future outage: 23:00-24:00")
+                print(f"\nResult:\n{result_text}")
 
-        finally:
-            # Restore original datetime
-            server.datetime = original_datetime
+                # Verify that the result shows the future outage (23:00), not the past one (20:00)
+                assert "23:00" in result_text, "Should show future outage at 23:00"
+                assert "20:00" not in result_text, "Should NOT show past outage at 20:00"
+
+                print("\n✓ Test 1 PASSED - Past outage correctly skipped\n")
+                return True
+
+            finally:
+                # Restore original datetime
+                server.datetime = original_datetime
 
     except Exception as e:
         print(f"\n✗ Test 1 FAILED: {e}")
@@ -142,11 +149,11 @@ async def test_ongoing_outage_skipped():
             outage_type="definite"
         )
 
-        # Save to cache
+        # Save to cache with current (real) timestamp so it's not considered stale
         cache = ScheduleCache(
             actual_schedules=[ongoing_outage, future_outage],
             possible_schedules=[],
-            last_updated=now
+            last_updated=datetime.now()  # Use real current time to avoid auto-refresh
         )
         config.save_schedule_cache(cache)
 
@@ -240,11 +247,11 @@ async def test_all_outages_past():
             outage_type="definite"
         )
 
-        # Save to cache
+        # Save to cache with current (real) timestamp so it's not considered stale
         cache = ScheduleCache(
             actual_schedules=[past_outage_1, past_outage_2, tomorrow_outage],
             possible_schedules=[],
-            last_updated=now
+            last_updated=datetime.now()  # Use real current time to avoid auto-refresh
         )
         config.save_schedule_cache(cache)
 
@@ -329,11 +336,11 @@ async def test_exact_bug_scenario():
             outage_type="definite"
         )
 
-        # Save to cache
+        # Save to cache with current (real) timestamp so it's not considered stale
         cache = ScheduleCache(
             actual_schedules=[past_outage, future_outage],
             possible_schedules=[],
-            last_updated=now.replace(hour=19, minute=40)  # Updated at 19:40
+            last_updated=datetime.now()  # Use real current time to avoid auto-refresh
         )
         config.save_schedule_cache(cache)
 

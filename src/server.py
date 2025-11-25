@@ -261,16 +261,42 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
             text=i18n.t("messages.address_not_configured")
         )]
 
-    # Load schedule from cache
+    # Load schedule from cache and check if it's fresh
     cached = config.load_schedule_cache()
+    now = datetime.now()
+
+    # If cache is stale (older than 1 hour) or missing, fetch fresh data
+    should_refresh = False
     if not cached or not cached.actual_schedules:
-        return [TextContent(
-            type="text",
-            text=i18n.t("messages.no_schedule_data")
-        )]
+        should_refresh = True
+    else:
+        cache_age = now - cached.last_updated
+        if cache_age.total_seconds() >= 3600:  # 1 hour
+            should_refresh = True
+
+    # Fetch fresh data if needed
+    if should_refresh:
+        logger.info(f"Cache is stale or missing, fetching fresh schedule for {address.to_string()}")
+        try:
+            cached = await fetch_dtek_schedule(
+                city=address.city,
+                street=address.street,
+                house_number=address.house_number,
+                include_possible=True
+            )
+            config.save_schedule_cache(cached)
+        except Exception as e:
+            logger.error(f"Error fetching schedule: {e}", exc_info=True)
+            # If we have old cached data, use it as fallback
+            if cached and cached.actual_schedules:
+                logger.warning("Using stale cache data as fallback")
+            else:
+                return [TextContent(
+                    type="text",
+                    text=i18n.t("messages.error_fetching", error=str(e))
+                )]
 
     # Find next outage
-    now = datetime.now()
     current_hour = now.hour
     today_date = now.strftime("%d.%m.%y")
 
@@ -576,16 +602,40 @@ async def handle_check_upcoming_outages(arguments: dict) -> list[TextContent]:
             text=i18n.t("messages.address_not_configured")
         )]
 
-    # Load schedule from cache
+    # Load schedule from cache and check if it's fresh
     cached = config.load_schedule_cache()
+    now = datetime.now()
+
+    # If cache is stale (older than 1 hour) or missing, fetch fresh data
+    should_refresh = False
     if not cached or not cached.actual_schedules:
-        return [TextContent(
-            type="text",
-            text=i18n.t("messages.no_schedule_data")
-        )]
+        should_refresh = True
+    else:
+        cache_age = now - cached.last_updated
+        if cache_age.total_seconds() >= 3600:  # 1 hour
+            should_refresh = True
+
+    # Fetch fresh data if needed
+    if should_refresh:
+        logger.info(f"Cache is stale or missing for notifications, fetching fresh schedule")
+        try:
+            cached = await fetch_dtek_schedule(
+                city=address.city,
+                street=address.street,
+                house_number=address.house_number,
+                include_possible=True
+            )
+            config.save_schedule_cache(cached)
+        except Exception as e:
+            logger.error(f"Error fetching schedule: {e}", exc_info=True)
+            # If we have old cached data, use it as fallback
+            if not (cached and cached.actual_schedules):
+                return [TextContent(
+                    type="text",
+                    text=i18n.t("messages.error_fetching", error=str(e))
+                )]
 
     # Find upcoming outages within notification window
-    now = datetime.now()
     current_hour = now.hour
     current_minute = now.minute
 

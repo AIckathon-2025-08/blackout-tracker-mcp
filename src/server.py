@@ -264,6 +264,15 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
     # Load schedule from cache and check if it's fresh
     cached = config.load_schedule_cache()
     now = datetime.now()
+    today_date = now.strftime("%d.%m.%y")
+
+    # Helper function to check if a date string (dd.mm.yy) is in the past
+    def is_date_in_past(date_str: str) -> bool:
+        try:
+            schedule_date = datetime.strptime(date_str, "%d.%m.%y").date()
+            return schedule_date < now.date()
+        except (ValueError, TypeError):
+            return False
 
     # If cache is stale (older than 1 hour) or missing, fetch fresh data
     should_refresh = False
@@ -273,6 +282,18 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
         cache_age = now - cached.last_updated
         if cache_age.total_seconds() >= 3600:  # 1 hour
             should_refresh = True
+
+        # Also check if all cached actual schedules are for past dates
+        if not should_refresh:
+            actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
+            all_dates_in_past = all(
+                s.date and is_date_in_past(s.date)
+                for s in actual_schedules
+                if s.date
+            )
+            if all_dates_in_past and actual_schedules:
+                logger.info("All cached schedules are for past dates, forcing refresh")
+                should_refresh = True
 
     # Fetch fresh data if needed
     if should_refresh:
@@ -298,7 +319,6 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
 
     # Find next outage
     current_hour = now.hour
-    today_date = now.strftime("%d.%m.%y")
 
     # Filter only actual schedules and sort by date and hour
     actual_schedules = [s for s in cached.actual_schedules if s.schedule_type == ScheduleType.ACTUAL]
@@ -334,6 +354,10 @@ async def handle_get_next_outage(arguments: dict) -> list[TextContent]:
 
     # Now find the next outage that starts after any ongoing outage ends
     for schedule in actual_schedules:
+        # Skip schedules with past dates
+        if schedule.date and is_date_in_past(schedule.date):
+            continue
+
         # Check if this is today's schedule
         if schedule.date == today_date:
             # If we're in an ongoing outage, only consider outages that start at or after it ends
